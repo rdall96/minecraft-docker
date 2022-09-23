@@ -15,7 +15,7 @@ RUN apk add openjdk17-jre-headless
 WORKDIR /minecraft
 
 # Copy the server runtime and the startup scripts
-COPY server/* .
+COPY server/server.jar ./
 COPY start_server.sh .
 
 # Set the entry point for the container

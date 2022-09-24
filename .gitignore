@@ -10,6 +10,7 @@
 build/
 dist/
 *.egg-info/
+__pycache__
 
 # Environment
 venv/
@@ -17,3 +18,5 @@ env/
 
 # Other files
 tmp/
+minecraft/server
+minecraft/latest.txt

@@ -7,9 +7,9 @@
 # Use alpine linux as it's the lightest image to begin with
 FROM alpine:latest
 
-# Install the runtime (java)
+# Install the runtime (java) and other dependencies
 RUN apk update
-RUN apk add openjdk17-jre-headless
+RUN apk add openjdk17-jre-headless bash
 
 # Create a directory for all of minecraft related files to reside
 WORKDIR /minecraft

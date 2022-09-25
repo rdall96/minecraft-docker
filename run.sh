@@ -24,6 +24,7 @@ done
 
 # Set globals
 WORK_DIR=$(dirname $0)
+MINECARFT_SERVER_DIR="$WORK_DIR/minecraft/server"
 IMAGE_NAME="rdall96/minecraft-server"
 
 # Check docker version
@@ -46,8 +47,8 @@ pip install -r "$WORK_DIR/requirements.txt"
 
 # Check if the image has already been created
 echo -e "\nChecking the latest Minecraft version..."
-python "$WORK_DIR/src/check_version.py"
-LATEST_VER=$(cat "$WORK_DIR/minecraft/latest.txt")
+python "$WORK_DIR/src/main.py" -c
+LATEST_VER=$(cat "$MINECARFT_SERVER_DIR/version.txt")
 set +o errexit
 docker manifest inspect "$IMAGE_NAME:$LATEST_VER" > /dev/null
 FOUND="$(echo $?)"
@@ -61,18 +62,17 @@ else
     # Run the minecraft download script
     echo -e "\nDownloading Minecraft..."
     python "$WORK_DIR/src/main.py"
-    MINECRAFT_VER=$(cat "$WORK_DIR/minecraft/server/version.txt")
 
     # Build the docker image
     echo -e "\nBuilding image..."
-    docker build "$WORK_DIR/minecraft" -t "$IMAGE_NAME:$MINECRAFT_VER"
-    echo -e "\nTagged Minecraft docker image '$IMAGE_NAME:$MINECRAFT_VER' (latest)"
-    docker tag "$IMAGE_NAME:$MINECRAFT_VER" "$IMAGE_NAME:latest"
+    docker build "$WORK_DIR/minecraft" -t "$IMAGE_NAME:$LATEST_VER"
+    echo -e "\nTagged Minecraft docker image '$IMAGE_NAME:$LATEST_VER' (latest)"
+    docker tag "$IMAGE_NAME:$LATEST_VER" "$IMAGE_NAME:latest"
 
     # Push to DockerHub
     if [[ $DRYRUN -ne 1 ]]; then
         echo -e "\nPushing to DockerHub..."
-        docker push "$IMAGE_NAME:$MINECRAFT_VER"
+        docker push "$IMAGE_NAME:$LATEST_VER"
         docker push "$IMAGE_NAME:latest"
     fi
 fi
@@ -81,5 +81,5 @@ fi
 deactivate
 rm -rf "$PYTHON_VENV"
 if [[ $SAVE -ne 1 ]]; then
-    docker rmi "$IMAGE_NAME:$MINECRAFT_VER" "$IMAGE_NAME:latest"
+    docker rmi "$IMAGE_NAME:$LATEST_VER" "$IMAGE_NAME:latest"
 fi

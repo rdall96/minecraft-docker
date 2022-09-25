@@ -77,6 +77,9 @@ docker run -d --name minecraft \
     rdall96/minecraft-server:latest
 ```
 
+## Issues
+Please report any issues or suggestions directly to the project page. You can create a new issue here: [Minecraft Docker - Issues](https://gitlab.com/rdall96/minecraft-docker/-/issues)
+
 ## Development
 
 This Minecraft Docker image can easily be used as a starting point for creating your own custom Minecraft container.

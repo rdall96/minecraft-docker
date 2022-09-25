@@ -78,7 +78,7 @@ docker run -d --name minecraft \
 ```
 
 ## Issues
-Please report any issues or suggestions directly to the project page. You can create a new issue here: [Minecraft Docker - Issues](https://gitlab.com/rdall96/minecraft-docker/-/issues)
+All users are encouraged to report any issues they might run into or suggestions that would improve the experience of using this docker container. Simply send an email to [Minecraft Docker - Support](mailto:contact-project+rdall96-minecraft-docker-39680657-issue-@incoming.gitlab.com)
 
 ## Development
 

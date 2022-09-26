@@ -23,9 +23,10 @@ def save_latest_version(version: str, working_dir: str):
 
 
 @click.command(NAME)
-@click.option("-c", "--check-only", is_flag=True, help="Only check for the latest Minecraft version and save it to a file")
+@click.option("-l", "--latest", "check_latest", is_flag=True, help="Only check for the latest Minecraft version and save it to a file")
+@click.option("-m", "--minecraft", "minecraft_version", type=str, default="latest", help="The version of Minecraft to download")
 @click.option("-v", "--verbose", is_flag=True, help="Run in verbose mode")
-def cli(check_only: bool, verbose: bool):
+def cli(check_latest: bool, minecraft_version:str, verbose: bool):
     logger = Logger(NAME)
     config = {
         "logging": {
@@ -51,37 +52,35 @@ def cli(check_only: bool, verbose: bool):
     # Download the latest minecraft server version
     downloader = Java_ServerDownloader(**config)
 
-    # Get the latest game version
+    # Get a list of available game version
     game_versions = downloader.get_available_game_versions()
     logger.info(f"Found {len(game_versions)} available game versions")
     if len(game_versions) == 0:
         logger.error(f"No game versions available for download, aborting...")
         raise Exception
-    latest = game_versions[0]
-    logger.info(f"Latest game version: {latest}")
+    if minecraft_version == "latest":
+        minecraft_version = game_versions[0]
+    logger.info(f"Selected game version: {minecraft_version}")
     
-    # Store the latest version number
+    # Store the version number
     with open(os.path.join(minecraft_dir, "version.txt"), mode="w") as f:
-        f.write(latest)
-    if check_only:
+        f.write(minecraft_version)
+    if check_latest:
         # Quit if running in check mode only
         return
 
-    # Download the latest minecraft server version
+    # Download the selected minecraft server version
     try:
-        downloader.download(version=latest, save_location=minecraft_dir)
+        downloader.download(version=minecraft_version, save_location=minecraft_dir)
     except Exception as e:
         logger.error(f"Downloading minecraft jar failed with error: {str(e)}")
         raise Exception
 
     # Get the path to the downloaded jar to ensure it exists
-    minecraft_jar = os.path.join(minecraft_dir, f"{latest}.jar")
+    minecraft_jar = os.path.join(minecraft_dir, f"{minecraft_version}.jar")
     if not os.path.isfile(minecraft_jar):
         logger.error(f"No Minecraft jar found at {minecraft_dir}")
         raise Exception
-    # Rename it to be the standard `server.jar`
-    server_jar = os.path.join(minecraft_dir, "server.jar")
-    os.rename(minecraft_jar, server_jar)
 
 
 if __name__ == "__main__":

@@ -7,15 +7,18 @@
 # Use alpine linux as it's the lightest image to begin with
 FROM alpine:latest
 
+ARG JAVA_VER="17"
+ARG MINECRAFT_VER
+
 # Install the runtime (java) and other dependencies
 RUN apk update
-RUN apk add openjdk17-jre-headless bash
+RUN apk add "openjdk${JAVA_VER}-jre-headless" bash
 
 # Create a directory for all of minecraft related files to reside
 WORKDIR /minecraft
 
 # Copy the server runtime and the startup scripts
-COPY server/server.jar ./
+COPY "server/${MINECRAFT_VER}.jar" server.jar
 COPY start_server.sh .
 
 # Set the entry point for the container

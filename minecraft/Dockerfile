@@ -8,7 +8,7 @@
 FROM alpine:latest
 
 ARG JAVA_VER="17"
-ARG MINECRAFT_VER
+ARG MINECRAFT_JAR_URL
 
 # Install the runtime (java) and other dependencies
 RUN apk update
@@ -18,7 +18,7 @@ RUN apk add "openjdk${JAVA_VER}-jre-headless" bash
 WORKDIR /minecraft
 
 # Copy the server runtime and the startup scripts
-COPY "server/${MINECRAFT_VER}.jar" server.jar
+ADD "${MINECRAFT_JAR_URL}" server.jar
 COPY start_server.sh .
 
 # Set the entry point for the container

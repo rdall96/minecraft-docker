@@ -91,6 +91,11 @@ class ServerDownloader(ABC):
         return list(self._game_versions().keys())
 
     @abstractmethod
+    def get_download_url(self, version: str) -> str:
+        """ Returns the URL where to download the specified server version """
+        raise NotImplementedError()
+
+    @abstractmethod
     def _download(self, version: str, save_location: str) -> str:
         """ Downloads the single minecraft version requested and return the full file path """
         raise NotImplementedError()

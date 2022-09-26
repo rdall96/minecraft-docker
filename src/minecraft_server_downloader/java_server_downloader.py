@@ -15,8 +15,6 @@ class Java_ServerDownloader(ServerDownloader):
 
     _type: str = "JAVA"
 
-    _EARLIEST_SUPPORTED_VERSION = "1.7.2"
-
     def __init__(self, **extra_configs: dict):
         super().__init__(**extra_configs)
         # Download the version manifest for this downloader
@@ -39,18 +37,16 @@ class Java_ServerDownloader(ServerDownloader):
                 versions[version_id] = version_download_url
         return versions
 
-    def get_available_game_versions(self) -> list:
+    def get_download_url(self, version: str) -> str:
         """
-        Returns a list of available game versions
+        Returns the URL where to download the specified server version
         """
-        # Call the super method to get the full list of available game versions
-        versions = super().get_available_game_versions()
-        # Since the list of game versions is ordered, we can get the index of the item that is the earlier supported version,
-        # and slice the list to return every element after that.
-        # Note that the list is in reverse order, from the latest version number to the oldest.
-        unsupported_index = versions.index(
-            self._EARLIEST_SUPPORTED_VERSION) + 1
-        return versions[:unsupported_index]
+        manifest = json.loads(ServerDownloader._make_request(self._game_versions()[version]))
+        self._logger.debug(
+            f"Retrieved info for game version {version} ({self._type})")
+        manifest_server_downloads = manifest.get(
+            "downloads", {}).get("server", {})
+        return manifest_server_downloads.get("url", None)
 
     def _download(self, version: str, save_location: str) -> str:
         # Destination path for this version

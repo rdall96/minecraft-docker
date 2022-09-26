@@ -1,0 +1,60 @@
+# Minecraft Docker
+# config.yaml
+# Copyright (c) 2022 Ricky Dall'Armellina (rdall96@gmail.com). All Rights Reserved.
+#
+# This configuration file defines extra parameters for the minecraft-docker build system.
+
+logging:
+  level: "info"
+
+build_directory: "minecraft/"
+docker_image_name: "rdall96/minecraft-server"
+
+# The earliest version of Minecraft supported by the build, note that changing this might cause docker build errors
+earliest_supported_minecraft_version: 1.8
+
+# The latest version of Java
+latest_java_version: 17
+
+# Map of optimal settings and environment each Minecraft version might require, such as the Java version
+minecraft_minor_versions: # x
+  0:
+    java_version: 7
+  1:
+    java_version: 7
+  2:
+    java_version: 7
+  3:
+    java_version: 7
+  4:
+    java_version: 8
+  5:
+    java_version: 8
+  6:
+    java_version: 8
+  7:
+    java_version: 8
+  8:
+    java_version: 8
+  9:
+    java_version: 8
+  10:
+    java_version: 8
+  11:
+    java_version: 8
+  12:
+    java_version: 11
+  13:
+    java_version: 11
+  14:
+    java_version: 11
+  15:
+    java_version: 11
+  16:
+    java_version: 11
+  17:
+    java_version: 17
+  18:
+    java_version: 17
+  19:
+    java_version: 17

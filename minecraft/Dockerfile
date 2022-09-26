@@ -7,12 +7,12 @@
 # Use alpine linux as it's the lightest image to begin with
 FROM alpine:latest
 
-ARG JAVA_VER="17"
+ARG JAVA_VER
 ARG MINECRAFT_JAR_URL
 
 # Install the runtime (java) and other dependencies
 RUN apk update
-RUN apk add "openjdk${JAVA_VER}-jre-headless" bash
+RUN apk add "${JAVA_VER}" bash
 
 # Create a directory for all of minecraft related files to reside
 WORKDIR /minecraft

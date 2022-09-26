@@ -10,51 +10,48 @@ logging:
 build_directory: "minecraft/"
 docker_image_name: "rdall96/minecraft-server"
 
-# The earliest version of Minecraft supported by the build, note that changing this might cause docker build errors
-earliest_supported_minecraft_version: 1.8
-
 # The latest version of Java
-latest_java_version: 17
+latest_java_version: openjdk17-jre-headless
 
 # Map of optimal settings and environment each Minecraft version might require, such as the Java version
 minecraft_minor_versions: # x
   0:
-    java_version: 7
+    java_version: openjdk7-jre
   1:
-    java_version: 7
+    java_version: openjdk7-jre
   2:
-    java_version: 7
+    java_version: openjdk7-jre
   3:
-    java_version: 7
+    java_version: openjdk7-jre
   4:
-    java_version: 8
+    java_version: openjdk8-jre
   5:
-    java_version: 8
+    java_version: openjdk8-jre
   6:
-    java_version: 8
+    java_version: openjdk8-jre
   7:
-    java_version: 8
+    java_version: openjdk8-jre
   8:
-    java_version: 8
+    java_version: openjdk8-jre
   9:
-    java_version: 8
+    java_version: openjdk8-jre
   10:
-    java_version: 8
+    java_version: openjdk8-jre
   11:
-    java_version: 8
+    java_version: openjdk8-jre
   12:
-    java_version: 11
+    java_version: openjdk11-jre-headless
   13:
-    java_version: 11
+    java_version: openjdk11-jre-headless
   14:
-    java_version: 11
+    java_version: openjdk11-jre-headless
   15:
-    java_version: 11
+    java_version: openjdk11-jre-headless
   16:
-    java_version: 11
+    java_version: openjdk11-jre-headless
   17:
-    java_version: 17
+    java_version: openjdk17-jre-headless
   18:
-    java_version: 17
+    java_version: openjdk17-jre-headless
   19:
-    java_version: 17
+    java_version: openjdk17-jre-headless

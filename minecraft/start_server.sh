@@ -1,7 +1,7 @@
 #!/bin/bash
 # Entry point for starting the minecraft server
 
-set -o errexit
+# set -o errexit
 
 # Print out the java version
 echo "Java Runtime:"

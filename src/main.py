@@ -74,14 +74,8 @@ def remove_image(image_name: str, tag: str) -> bool:
     return subprocess.run(cmd).returncode == 0
 
 
-@click.command("Minecraft Docker Builder CLI")
-@click.option("-d", "--dryrun", is_flag=True, help="Dryrun (build the image but don't upload)")
-@click.option("-k", "--keep-image", is_flag=True, help="Save the tagged image (don't delete the artifacts)")
-@click.option("-f", "--force", is_flag=True, help="Force upload to overwrite the remote registry")
-@click.option("--minecraft", "minecraft_version", type=str, default="latest", show_default=True, help="Specify the version of Minecraft to build")
-@click.option("-v", "--verbose", is_flag=True, help="Run in verbose mode")
-def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, verbose: bool):
-    
+def minecraft_docker(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, verbose: bool):
+    """ Compile Minecraft Docker images """
     # Setup the working directory and config
     cwd = os.path.dirname(
         os.path.dirname(
@@ -103,8 +97,35 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
     if len(game_versions) == 0:
         logger.error(f"No game versions available for download, aborting...")
         raise MinecraftVersionError
+    
+    # If the `minecraft_version` is "latest" grab the newest one from the available game versions
     if minecraft_version == "latest":
         minecraft_version = game_versions[0]
+    
+    # If the `minecraft_version` is "all" rebuilt all available game versions, so call this function recursively which will handle just that
+    if minecraft_version == "all":
+        # Reverse the game versions first so we build them in order
+        game_versions.reverse()
+        # Keep track of how many versions fail to build
+        failed = []
+        for game in game_versions:
+            print("\n\n")
+            print(f" Minecraft {game} ".center(80, "-"))
+            try:
+                minecraft_docker(
+                    dryrun=dryrun,
+                    keep_image=keep_image,
+                    force=True, # we set force to `True` since we want to re-compile every image anyway
+                    minecraft_version=game,
+                    verbose=verbose
+                )
+            except:
+                # FIXME: Ignore build errors for a single version, some older Minecraft versions have a broken download link
+                failed.append(game)
+        print("\n\n")
+        print(f"Built {len(game_versions)} Minecraft Docker images. {len(failed)} failed: {', '.join(failed)}")
+        # Exit here since all images have already been built
+        return
 
     # Flag to determine if docker should tag a 'latest' version. This will depend on the version of Minecraft
     tag_latest = minecraft_version == game_versions[0]
@@ -160,6 +181,22 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
                 logger.error(f"Un-tagging '{tag}' failed!")
                 raise DockerTagError
         logger.info(f"Cleaned up {len(tags)} local tag(s)")
+
+
+@click.command("Minecraft Docker Builder CLI")
+@click.option("-d", "--dryrun", is_flag=True, help="Dryrun (build the image but don't upload)")
+@click.option("-k", "--keep-image", is_flag=True, help="Save the tagged image (don't delete the artifacts)")
+@click.option("-f", "--force", is_flag=True, help="Force upload to overwrite the remote registry")
+@click.option("--minecraft", "minecraft_version", type=str, default="latest", show_default=True, help="Specify the version of Minecraft to build")
+@click.option("-v", "--verbose", is_flag=True, help="Run in verbose mode")
+def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, verbose: bool):
+    minecraft_docker(
+        dryrun=dryrun,
+        keep_image=keep_image,
+        force=force,
+        minecraft_version=minecraft_version,
+        verbose=verbose
+    )
 
 
 if __name__ == "__main__":

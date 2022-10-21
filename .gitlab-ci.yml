@@ -10,7 +10,7 @@ build-job:
   stage: build
   script:
     - echo "Re-building all Minecraft Docker images..."
-    - ./run.sh --minecraft all
+    - bash run.sh --minecraft all
   # Run this job only when there are changes to the main branch and they target source code
   only:
     refs:

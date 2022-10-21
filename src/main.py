@@ -6,36 +6,27 @@ import os
 import subprocess
 
 import click
-import yaml
 
 from minecraft_server_downloader.java_server_downloader import Java_ServerDownloader
-from utilities import Logger
+from utilities import Config, Logger
 from utilities.exceptions import *
 
 
 SCRIPT_NAME = "Minecraft Docker Builder"
 
 
-def load_config(root_dir: str) -> dict:
-    config_path = os.path.join(root_dir, "config.yaml")
-    if not os.path.isfile(config_path):
-        raise FileNotFoundError(f"No config file found at {config_path}")
-    with open(config_path, mode="r") as f:
-        return yaml.safe_load(f)
-
-
-def build(build_root: str, config: dict, image_name: str, minecraft_version: str, java_version: str, tag_latest: bool):
+def build(build_root: str, config: Config, image_name: str, minecraft_version: str, java_version: int, tag_latest: bool):
     """ Build minecraft-docker """
-    logger = Logger("Builder", level=config["logging"]["level"])
+    logger = Logger("Builder", level=config.log_level)
 
     # Show build settings
-    logger.info(f"Selected Java version: {java_version}")
+    logger.info(f"Selected Java version: {java_version} ({config.java_package_name(java_version)})")
     logger.info(f"Selected Minecraft version: {minecraft_version}")
 
     # Get the Minecraft server download URL
     logger.info("Fetching Minecraft server URL...")
     try:
-        downloader = Java_ServerDownloader(**config)
+        downloader = Java_ServerDownloader(**config.logger_config_dict)
         minecraft_url = downloader.get_download_url(version=minecraft_version)
     except Exception as e:
         logger.error(f"Fetching minecraft jar URL failed with error: {str(e)}")
@@ -45,7 +36,7 @@ def build(build_root: str, config: dict, image_name: str, minecraft_version: str
     logger.info("Building image...")
     cmd = [
         "docker", "build", build_root,
-        "--build-arg", f"JAVA_VER={java_version}",
+        "--build-arg", f"JAVA_VER={config.java_package_name(java_version)}",
         "--build-arg", f"MINECRAFT_JAR_URL={minecraft_url}",
         "-t", f"{image_name}:{minecraft_version}"
     ]
@@ -81,21 +72,19 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         os.path.dirname(
             os.path.abspath(__file__)
     ))
-    config = load_config(cwd)
+    config = Config(os.path.join(cwd, "config.yaml"))
 
     if verbose:
-        config["logging"]["level"] = "debug"
+        config.set_log_level("debug")
 
-    logger = Logger("CLI", level=config["logging"]["level"])
+    logger = Logger("CLI", level=config.log_level)
     logger.debug(f"Working directory: {cwd}")
 
     # Flag to determine if docker should tag a 'latest' version. This will depend on the version of Minecraft
     tag_latest=False
-    # Name of the docker image to tag
-    image_name = config.get("docker_image_name", "minecraft")
 
     # Prepare to build
-    downloader = Java_ServerDownloader(**config)
+    downloader = Java_ServerDownloader(**config.logger_config_dict)
     logger.debug("Checking for available Minecraft versions...")
     game_versions = downloader.get_available_game_versions()
     logger.debug(f"Found {len(game_versions)} available game versions")
@@ -110,22 +99,21 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
     if not force:
         cmd = [
             "docker", "manifest", "inspect",
-            f"{image_name}:{minecraft_version}"
+            f"{config.docker_image_name}:{minecraft_version}"
         ]
         if not subprocess.run(cmd).returncode:
-            logger.warning(f"Found image for selected Minecraft version in DockerHub {image_name}:{minecraft_version}, no need to rebuild")
+            logger.warning(f"Found image for selected Minecraft version in DockerHub {config.docker_image_name}:{minecraft_version}, no need to rebuild")
             return
 
     # Fetch the correct Java version for this build
-    minecraft_minor_version = int(minecraft_version.split(".")[1])
-    java_version = config.get("minecraft_minor_versions", {}).get(minecraft_minor_version, {}).get("java_version")
+    java_version = config.java_version(minecraft_version=minecraft_version)
     if not java_version:
         logger.warning(f"No optimal Java version found for Minecraft {minecraft_version}, proceeding with the default")
-        java_version = config["latest_java_version"]
+        java_version = config.latest_java_version
 
     # Run the build
-    build(os.path.join(cwd, config["build_directory"]), config,
-        image_name, minecraft_version, java_version, tag_latest)
+    build(os.path.join(cwd, config.docker_build_directory), config,
+        config.docker_image_name, minecraft_version, java_version, tag_latest)
 
     # Push to DockerHub
     if not dryrun:
@@ -134,7 +122,7 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         if tag_latest:
             tags.append("latest")
         for tag in tags:
-            cmd = ["docker", "push", f"{image_name}:{tag}"]
+            cmd = ["docker", "push", f"{config.docker_image_name}:{tag}"]
             if subprocess.run(cmd).returncode:
                 logger.error(f"Pushing tag '{tag}' failed!")
                 raise DockerPushError
@@ -147,7 +135,7 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         if tag_latest:
             tags.append("latest")
         for tag in tags:
-            cmd = ["docker", "rmi", f"{image_name}:{tag}"]
+            cmd = ["docker", "rmi", f"{config.docker_image_name}:{tag}"]
             if subprocess.run(cmd).returncode:
                 logger.error(f"Un-tagging '{tag}' failed!")
                 raise DockerTagError

@@ -2,6 +2,7 @@
 # main.py
 # Copyright (c) 2022 Ricky Dall'Armellina (rdall96@gmail.com). All Rights Reserved.
 
+from email.mime import image
 import os
 import subprocess
 
@@ -24,16 +25,16 @@ def build(build_root: str, config: Config, image_name: str, minecraft_version: s
     logger.info(f"Selected Minecraft version: {minecraft_version}")
 
     # Get the Minecraft server download URL
-    logger.info("Fetching Minecraft server URL...")
+    logger.debug("Fetching Minecraft server URL...")
     try:
         downloader = Java_ServerDownloader(**config.logger_config_dict)
         minecraft_url = downloader.get_download_url(version=minecraft_version)
     except Exception as e:
-        logger.error(f"Fetching minecraft jar URL failed with error: {str(e)}")
+        logger.error(f"Fetching Minecraft jar URL failed with error: {str(e)}")
         raise ServerDownloadError
 
     # Build the image
-    logger.info("Building image...")
+    logger.debug("Building image...")
     cmd = [
         "docker", "build", build_root,
         "--build-arg", f"JAVA_VER={config.java_package_name(java_version)}",
@@ -59,6 +60,20 @@ def build(build_root: str, config: Config, image_name: str, minecraft_version: s
         logger.info(f"Tagged Minecraft docker image '{image_name}:latest'")
 
 
+def push(image_name: str, tag: str) -> bool:
+    """ Pushes the image to DockerHub and returns the success status """
+    # docker push <image_name>:<tag>
+    cmd = ["docker", "push", f"{image_name}:{tag}"]
+    return subprocess.run(cmd).returncode == 0
+
+
+def remove_image(image_name: str, tag: str) -> bool:
+    """ Deletes the Docker image from local storage and returns the success status """
+    # docker rmi <image_name>:<tag>
+    cmd = ["docker", "rmi", f"{image_name}:{tag}"]
+    return subprocess.run(cmd).returncode == 0
+
+
 @click.command("Minecraft Docker Builder CLI")
 @click.option("-d", "--dryrun", is_flag=True, help="Dryrun (build the image but don't upload)")
 @click.option("-k", "--keep-image", is_flag=True, help="Save the tagged image (don't delete the artifacts)")
@@ -80,9 +95,6 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
     logger = Logger("CLI", level=config.log_level)
     logger.debug(f"Working directory: {cwd}")
 
-    # Flag to determine if docker should tag a 'latest' version. This will depend on the version of Minecraft
-    tag_latest=False
-
     # Prepare to build
     downloader = Java_ServerDownloader(**config.logger_config_dict)
     logger.debug("Checking for available Minecraft versions...")
@@ -92,8 +104,10 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         logger.error(f"No game versions available for download, aborting...")
         raise MinecraftVersionError
     if minecraft_version == "latest":
-        tag_latest=True
         minecraft_version = game_versions[0]
+
+    # Flag to determine if docker should tag a 'latest' version. This will depend on the version of Minecraft
+    tag_latest = minecraft_version == game_versions[0]
 
     # Check if the image already exists in DockerHub
     if not force:
@@ -112,8 +126,14 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         java_version = config.latest_java_version
 
     # Run the build
-    build(os.path.join(cwd, config.docker_build_directory), config,
-        config.docker_image_name, minecraft_version, java_version, tag_latest)
+    build(
+        build_root=os.path.join(cwd, config.docker_build_directory),
+        config=config,
+        image_name=config.docker_image_name,
+        minecraft_version=minecraft_version,
+        java_version=java_version,
+        tag_latest=tag_latest
+    )
 
     # Push to DockerHub
     if not dryrun:
@@ -122,21 +142,21 @@ def cli(dryrun: bool, keep_image: bool, force: bool, minecraft_version: str, ver
         if tag_latest:
             tags.append("latest")
         for tag in tags:
-            cmd = ["docker", "push", f"{config.docker_image_name}:{tag}"]
-            if subprocess.run(cmd).returncode:
+            success = push(image_name=config.docker_image_name, tag=tag)
+            if not success:
                 logger.error(f"Pushing tag '{tag}' failed!")
                 raise DockerPushError
         logger.info(f"Pushed {len(tags)} tag(s) successfully")
 
     # Cleanup
     if not keep_image:
-        logger.debug("Removing built images form local storage")
+        logger.debug("Removing built images from local storage")
         tags = [minecraft_version]
         if tag_latest:
             tags.append("latest")
         for tag in tags:
-            cmd = ["docker", "rmi", f"{config.docker_image_name}:{tag}"]
-            if subprocess.run(cmd).returncode:
+            success = remove_image(image_name=config.docker_image_name, tag=tag)
+            if not success:
                 logger.error(f"Un-tagging '{tag}' failed!")
                 raise DockerTagError
         logger.info(f"Cleaned up {len(tags)} local tag(s)")

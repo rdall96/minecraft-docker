@@ -14,7 +14,7 @@ echo "eula=$EULA" > eula.txt
 # Collect environment variables (key = env var, value = minecraft name)
 declare -A PROPERTIES
 PROPERTIES[GAMEMODE]='gamemode'
-PROPERTIES[ENABLE_COMMAND_BLOCKS]='enable-command-block'
+PROPERTIES[ENABLE_COMMAND_BLOCK]='enable-command-block'
 PROPERTIES[MOTD]='motd'
 PROPERTIES[PVP]='pvp'
 PROPERTIES[GENERATE_STRUCTURES]='generate-structures'

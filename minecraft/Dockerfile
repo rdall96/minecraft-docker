@@ -23,3 +23,5 @@ COPY start_server.sh .
 
 # Set the entry point for the container
 ENTRYPOINT [ "/minecraft/start_server.sh" ]
+# Set the 'world' folder as a volume to persist data
+VOLUME [ "/minecraft/world" ]

@@ -19,7 +19,7 @@ The new server will be running at `localhost:25565` or `<your-ip-address-here>:2
 ## Customization
 
 ### World data
-You can map the container path to the world file to a local directory on your system in order to persist the data throughout server restarts and updates. Jsut simply add this to your *docker run* command: `-v /minecraft/world:<host-path>`.
+You can map the container path to the world file to a local directory on your system in order to persist the data throughout server restarts and updates on a location of your choosing. Just simply add this to your *docker run* command: `-v /minecraft/world:<host-path>`.
 
 Complete command example mapping the world data to a directory on your desktop:
 ```
@@ -36,7 +36,7 @@ There are a number of environment variables you can pass to your container in or
 | server.property       | Name                  | Values                                    | Default       | Description                                                                                                                                                                                   |
 | --------------------- | --------------------- | ----------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | gamemode              | GAMEMODE              | survival, creative, adventure, spectator  | survival      | Defines the mode of gameplay                                                                                                                                                                  |
-| enable-command-blocks | ENABLE_COMMAND_BLOCKS | true, false                               | false         | Enables command block                                                                                                                                                                        |
+| enable-command-block  | ENABLE_COMMAND_BLOCK  | true, false                               | false         | Enables command blocks                                                                                                                                                                        |
 | motd                  | MOTD                  | (any string)                              | (empty)       | This is the message that is displayed in the server list of the client, below the name                                                                                                        |
 | pvp                   | PVP                   | true, false                               | true          | Enable PvP (player-vs-player) on the server                                                                                                                                                   |
 | generate-structures   | GENERATE_STRUCTURES   | true, false                               | true          | Defines whether structures (such as villages) can be generated                                                                                                                                |

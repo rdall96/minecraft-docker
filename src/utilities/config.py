@@ -6,6 +6,8 @@ import os
 
 import yaml
 
+from .install_types import InstallType
+
 class Config:
 
     def __init__(self, config_path: str):
@@ -28,9 +30,8 @@ class Config:
     def logger_config_dict(self) -> dict:
         return {"logging": self._data["logging"]}
 
-    @property
-    def docker_build_directory(self) -> str:
-        return self._data["build_directory"]
+    def docker_build_directory(self, install_type: InstallType = InstallType.vanilla) -> str:
+        return self._data["build_directories"][install_type.value]
 
     @property
     def docker_image_name(self) -> str:

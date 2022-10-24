@@ -1,5 +1,5 @@
-# Minecraft Server Downloader
-# minecraft_server_downloader/server_downloader.py
+# Minecraft Docker Compiler
+# downloader.py
 # Copyright (c) 2022 Ricky Dall'Armellina (rdall96@gmail.com). All Rights Reserved.
 
 from abc import ABC, abstractmethod
@@ -11,26 +11,26 @@ from tempfile import TemporaryDirectory
 from utilities import Logger, MagicFileTools
 from utilities.exceptions import ServerDownloadError
 
-class ServerDownloader(ABC):
-    """ Downloads server version of the game from Mojang
+class Downloader(ABC):
+    """
+    Generic server downloader
 
     Usage:
     # Create a server downloader
-    downloader = ServerDownloader()
+    downloader = Downloader()
 
     # Fetch for a list of all available game versions
-    downloader.get_available_game_versions()
+    downloader.get_available_versions()
 
     # Download a specific version
     file_path = downloader.download("1.15", "~/Downloads")
+
+    # Or get the URL for the download
+    url = downloader.get_download_url("1.15",)
     """
 
     # Type of downloader
     _type: str = None
-
-    # This value keeps track of the oldest version of the game that MCManager supports
-    # If the value is empty, it means we support all versions
-    _EARLIEST_SUPPORTED_VERSION = None
 
     def __init__(self, **extra_configs: dict):
         self._logger = Logger(
@@ -75,12 +75,12 @@ class ServerDownloader(ABC):
                 sha1sum.update(block)
                 block = f.read(2**16)
         return sha1sum.hexdigest()
-
+    
     @abstractmethod
     def _get_file_name(self, version: str) -> str:
         """ Returns the file name for this version (specific to the downloader type) """
         raise NotImplementedError()
-
+    
     @abstractmethod
     def _game_versions(self) -> dict:
         """ Dictionary of released game versions and url downloads """
@@ -99,7 +99,7 @@ class ServerDownloader(ABC):
     def _download(self, version: str, save_location: str) -> str:
         """ Downloads the single minecraft version requested and return the full file path """
         raise NotImplementedError()
-
+    
     def download(self, version: str, save_location: str) -> str:
         """ Downloads the single minecraft version requested and return the full file path """
 
@@ -128,6 +128,5 @@ class ServerDownloader(ABC):
                 raise ServerDownloadError(message)
             MagicFileTools.copy_file(download_fp, dest_path)
 
-        self._logger.info(
-            f"Successfully downloaded Minecraft version {version} ({self._type})")
+        self._logger.info(f"Successfully downloaded Minecraft version {version} ({self._type})")
         return dest_path

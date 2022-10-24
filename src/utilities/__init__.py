@@ -5,3 +5,4 @@
 from .config import Config
 from .logger import Logger
 from .file_tools import MagicFileTools
+from .install_types import InstallType

@@ -1,5 +1,5 @@
 # Minecraft Server Downloader
-# minecraft_server_downloader/java_server_downloader.py
+# vanilla_downloader.py
 # Copyright (c) 2022 Ricky Dall'Armellina (rdall96@gmail.com). All Rights Reserved.
 
 import json
@@ -7,13 +7,13 @@ import os
 
 from utilities.exceptions import ServerDownloadError
 
-from .server_downloader import ServerDownloader
+from .downloader import Downloader
 
 
-class Java_ServerDownloader(ServerDownloader):
-    """ Java server downloader helper """
+class VanillaDownloader(Downloader):
+    """ Vanilla server downloader helper """
 
-    _type: str = "JAVA"
+    _type: str = "vanilla"
 
     def __init__(self, **extra_configs: dict):
         super().__init__(**extra_configs)
@@ -21,7 +21,7 @@ class Java_ServerDownloader(ServerDownloader):
         self._logger.debug("Retrieving available game versions")
         json_version_url = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
         self._versions_manifest_dict = json.loads(
-            ServerDownloader._make_request(json_version_url))
+            Downloader._make_request(json_version_url))
 
     def _get_file_name(self, version: str) -> str:
         return f"{version}.jar"
@@ -41,7 +41,7 @@ class Java_ServerDownloader(ServerDownloader):
         """
         Returns the URL where to download the specified server version
         """
-        manifest = json.loads(ServerDownloader._make_request(self._game_versions()[version]))
+        manifest = json.loads(Downloader._make_request(self._game_versions()[version]))
         self._logger.debug(
             f"Retrieved info for game version {version} ({self._type})")
         manifest_server_downloads = manifest.get(
@@ -54,7 +54,7 @@ class Java_ServerDownloader(ServerDownloader):
         dest_path = os.path.join(save_location, file_name)
 
         # Download the respective version manifest
-        manifest = json.loads(ServerDownloader._make_request(self._game_versions()[version]))
+        manifest = json.loads(Downloader._make_request(self._game_versions()[version]))
         self._logger.debug(
             f"Retrieved info for game version {version} ({self._type})")
         manifest_server_downloads = manifest.get(
@@ -65,7 +65,7 @@ class Java_ServerDownloader(ServerDownloader):
 
         # If there's a valid server url, download that file
         if server_url:
-            ServerDownloader._get_file(server_url, dest_path)
+            Downloader._get_file(server_url, dest_path)
 
             try:
                 # Ensure the downloaded file exists
@@ -75,14 +75,14 @@ class Java_ServerDownloader(ServerDownloader):
                     raise ServerDownloadError(message)
 
                 # Ensure size matches
-                downloaded_jar_size = ServerDownloader.get_file_size(dest_path)
+                downloaded_jar_size = Downloader.get_file_size(dest_path)
                 if not downloaded_jar_size == server_size_bytes:
                     message = "downloaded server jar size does not match the expected size: {downloaded_jar_size} vs. {server_size_bytes} bytes"
                     self._logger.error(message)
                     raise ServerDownloadError(message)
 
                 # Ensure SHA1 matches
-                downloaded_jar_sha1 = ServerDownloader.get_file_sha1(dest_path)
+                downloaded_jar_sha1 = Downloader.get_file_sha1(dest_path)
                 if not downloaded_jar_sha1 == server_sha1:
                     message = "downloaded server jar does not match the expected SHA1"
                     self._logger.error(message)

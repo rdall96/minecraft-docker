@@ -7,7 +7,12 @@
 logging:
   level: "info"
 
-build_directory: "minecraft/"
+build_directories:
+  vanilla: "minecraft/vanilla"
+  forge: "minecraft/forge"
+  # fabric: "minecraft/fabric"
+  # bedrock: "minecraft/bedrock"
+
 docker_image_name: "rdall96/minecraft-server"
 
 # The latest version of Java

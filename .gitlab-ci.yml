@@ -1,19 +1,39 @@
 # Minecraft Docker Compiler
 # GitLab CI/CD configuration
 
+variables:
+  # The version of Minecraft to build, by default, all of them
+  MINECRAFT_VERSION: "all"
+
 stages:
   - build
 
-build-job:
+# Vanilla
+vanilla-build:
   stage: build
   script:
-    - echo "Re-building all Minecraft Docker images..."
-    - bash run.sh --minecraft all
+    - echo "Building Vanilla Minecraft Docker images..."
+    - bash run.sh --minecraft "$MINECRAFT_VERSION"
   # Run this job only when there are changes to the main branch and they target source code
   only:
     refs:
       - main
     changes:
-      - minecraft/*
+      - minecraft/vanilla/*
+      - src/*
+      - config.yml
+
+# Forge
+forge-build:
+  stage: build
+  script:
+    - echo "Building Forge Minecraft Docker images..."
+    - bash run.sh -t forge --minecraft "$MINECRAFT_VERSION"
+  # Run this job only when there are changes to the main branch and they target source code
+  only:
+    refs:
+      - main
+    changes:
+      - minecraft/forge/*
       - src/*
       - config.yml

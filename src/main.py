@@ -69,6 +69,9 @@ def build(build_root: str, config: Config, image_name: str, minecraft_version: s
     logger.info(f"Tagged Minecraft docker image '{image_name}:{main_tag}'")
     # Apply all the other tags as well
     for tag in tags[1:]:
+        # We want to re-tag the image instead of building with the new tag because
+        # a new version of the base image might have become available in the mean time,
+        # which would cause software discrepancies between the tags.
         cmd = [
             "docker", "tag",
             f"{image_name}:{main_tag}",
@@ -158,12 +161,13 @@ def minecraft_docker(dryrun: bool, keep_image: bool, force: bool, minecraft_vers
 
     # Check if the image already exists in DockerHub
     if not force:
+        latest_build_tag = build_tags[0]
         cmd = [
             "docker", "manifest", "inspect",
-            f"{config.docker_image_name}:{minecraft_version}"
+            f"{config.docker_image_name}:{latest_build_tag}"
         ]
         if not subprocess.run(cmd).returncode:
-            logger.warning(f"Found image for selected Minecraft version in DockerHub {config.docker_image_name}:{minecraft_version}, no need to rebuild")
+            logger.warning(f"Found image for selected Minecraft version in DockerHub {config.docker_image_name}:{latest_build_tag}, no need to rebuild")
             return
 
     # Fetch the correct Java version for this build

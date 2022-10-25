@@ -8,7 +8,7 @@ import os
 import requests
 from tempfile import TemporaryDirectory
 
-from utilities import Logger, MagicFileTools
+from utilities import Logger
 from utilities.exceptions import ServerDownloadError
 
 class Downloader(ABC):
@@ -94,39 +94,3 @@ class Downloader(ABC):
     def get_download_url(self, version: str) -> str:
         """ Returns the URL where to download the specified server version """
         raise NotImplementedError()
-
-    @abstractmethod
-    def _download(self, version: str, save_location: str) -> str:
-        """ Downloads the single minecraft version requested and return the full file path """
-        raise NotImplementedError()
-    
-    def download(self, version: str, save_location: str) -> str:
-        """ Downloads the single minecraft version requested and return the full file path """
-
-        # If the destination file already exists, return that path instead
-        dest_path = os.path.join(save_location, self._get_file_name(version))
-        if os.path.isfile(dest_path):
-            self._logger.info(
-                f"Minecraft version {version} ({self._type}) already exists at {dest_path}")
-            return dest_path
-        self._logger.info(
-            f"Downloading Minecraft version {version} ({self._type}) at {dest_path}")
-
-        # Don't attempt to download if the version isn't available
-        if version not in self.get_available_game_versions():
-            message = f"minecraft version {version} is not available for {self._type}"
-            self._logger.error(message)
-            raise ServerDownloadError(message)
-
-        # Create a new temporary download path
-        with TemporaryDirectory(prefix=self.__class__.__name__) as tmp_dir:
-            # Call the download task
-            download_fp = self._download(version, tmp_dir)
-            if not os.path.isfile(download_fp):
-                message = f"an error occurred while downloading minecraft server version {version} ({self._type})"
-                self._logger.error(message)
-                raise ServerDownloadError(message)
-            MagicFileTools.copy_file(download_fp, dest_path)
-
-        self._logger.info(f"Successfully downloaded Minecraft version {version} ({self._type})")
-        return dest_path

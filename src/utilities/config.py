@@ -6,7 +6,7 @@ import os
 
 import yaml
 
-from .install_types import InstallType
+from .types import MinecraftVersionType
 
 class Config:
 
@@ -30,8 +30,8 @@ class Config:
     def logger_config_dict(self) -> dict:
         return {"logging": self._data["logging"]}
 
-    def docker_build_directory(self, install_type: InstallType = InstallType.vanilla) -> str:
-        return self._data["build_directories"][install_type.value]
+    def docker_build_directory(self, build_type: MinecraftVersionType = MinecraftVersionType.vanilla) -> str:
+        return self._data["build_directories"][build_type.value]
 
     @property
     def docker_image_name(self) -> str:

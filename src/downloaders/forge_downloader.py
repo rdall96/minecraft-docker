@@ -89,7 +89,3 @@ class ForgeDownloader(Downloader):
         versions = self.get_forge_versions(minecraft_version=version)
         forge_version = versions.get("recommended", versions["latest"])
         return ForgeDownloader._assemble_download_url(version, forge_version)
-
-    def _download(self, version: str, save_location: str) -> str:
-        """ Downloads the single minecraft version requested and return the full file path """
-        raise NotImplementedError()

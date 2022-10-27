@@ -11,7 +11,7 @@ build_directories:
   vanilla: "minecraft/vanilla"
   forge: "minecraft/forge"
   # fabric: "minecraft/fabric"
-  # bedrock: "minecraft/bedrock"
+  bedrock: "minecraft/bedrock"
 
 docker_image_name: "rdall96/minecraft-server"
 
@@ -30,7 +30,7 @@ supported_java_versions:
     package_name: openjdk17-jre-headless
 
 # Map of optimal settings and environment each Minecraft version might require, such as the Java version
-minecraft_versions: # x
+minecraft_versions:
   1.0:
     java: 7
   1.1:

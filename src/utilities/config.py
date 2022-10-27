@@ -46,7 +46,7 @@ class Config:
         return self._data["supported_java_versions"]
     
     def java_package_name(self, version: int) -> str:
-        return self._supported_java_versions.get(version, self.latest_java_version)["package_name"]
+        return self._supported_java_versions.get(version, {}).get("package_name")
     
     def _minecraft_version_data(self, version: str = None) -> dict:
         if version:

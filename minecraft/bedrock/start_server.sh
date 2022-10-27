@@ -3,34 +3,24 @@
 
 # set -o errexit
 
-# Print out the java version
-echo "Java Runtime:"
-java --version
+# Print out some info
+echo "Release notes:"
+cat release-notes.txt
 echo -e "\n"
-
-# Set EULA
-echo "eula=$EULA" > eula.txt
 
 # Collect environment variables (key = env var, value = minecraft name)
 declare -A PROPERTIES
+PROPERTIES[SERVER_NAME]='server-name'
 PROPERTIES[GAMEMODE]='gamemode'
-PROPERTIES[ENABLE_COMMAND_BLOCK]='enable-command-block'
-PROPERTIES[MOTD]='motd'
-PROPERTIES[PVP]='pvp'
-PROPERTIES[GENERATE_STRUCTURES]='generate-structures'
+PROPERTIES[LEVEL_NAME]='level-name'
 PROPERTIES[DIFFICULTY]='difficulty'
 PROPERTIES[MAX_PLAYERS]='max-players'
 PROPERTIES[ALLOW_FLIGHT]='allow-flight'
 PROPERTIES[VIEW_DISTANCE]='view-distance'
-PROPERTIES[ALLOW_NETHER]='allow-nether'
-PROPERTIES[SIMULATION_DISTANCE]='simulation-distance'
 PROPERTIES[PLAYER_IDLE_TIMEOUT]='player-idle-timeout'
-PROPERTIES[HARDCORE]='hardcore'
-PROPERTIES[WHITE_LIST]='white-list'
-PROPERTIES[SPAWN_NPCS]='spawn-npcs'
-PROPERTIES[SPAWN_ANIMALS]='spawn-animals'
-PROPERTIES[SPAWN_MONSTERS]='spawn-monsters'
-PROPERTIES[SPAWN_PROTECTION]='spawn-protection'
+PROPERTIES[ALLOW_LIST]='allow-list'
+PROPERTIES[CHAT_RESTRICTION]='chat-restriction'
+PROPERTIES[DEFAULT_PLAYER_PERMISSION_LEVEL]='default-player-permission-level'
 
 # Wipe the server.properties file and re-write it with any overrides found in environment variables
 echo '' > server.properties
@@ -40,6 +30,10 @@ for key in "${!PROPERTIES[@]}"; do
         echo "${PROPERTIES[$key]}=${!key}" >> server.properties
     fi
 done
+# Override the server port to be inline with the Java version
+echo "server-port=25565" >> server.properties
+# Disable server telemetry
+echo "emit-server-telemetry=false" >> server.properties
 
 # Display current server.properties
 echo -e "Server properties:\n"
@@ -49,4 +43,4 @@ echo -e "\n"
 # Start the server
 cd /minecraft
 echo -e "Starting server...\n"
-bash run.sh --nogui
+LD_LIBRARY_PATH=. ./bedrock_server

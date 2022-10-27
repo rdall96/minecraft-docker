@@ -8,6 +8,7 @@ from utilities import MinecraftVersionType
 from .downloader import Downloader
 from .vanilla_downloader import VanillaDownloader
 from .forge_downloader import ForgeDownloader
+from .bedrock_downloader import BedrockDownloader
 
 class DownloaderFactory:
     

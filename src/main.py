@@ -47,13 +47,18 @@ class MinecraftDockerBuilder:
     def _compile(self, image_name: str, image_tag: str, minecraft_url: str, java_package_name: str):
         """ Run docker build to create the image """
         # Build the image using the first tag
-        self._logger.debug("Building image...")
+        self._logger.info("Building image...")
         cmd = [
             "docker", "build", self._config.docker_build_directory(self._build_type),
-            "--build-arg", f"JAVA_VER={java_package_name}",
-            "--build-arg", f"MINECRAFT_JAR_URL={minecraft_url}",
             "-t", f"{image_name}:{image_tag}"
         ]
+        if self._build_type is MinecraftVersionType.bedrock:
+            cmd.extend(["--build-arg", f"MINECRAFT_SERVER_URL={minecraft_url}"])
+        else:
+            cmd.extend([
+                "--build-arg", f"JAVA_VER={java_package_name}",
+                "--build-arg", f"MINECRAFT_JAR_URL={minecraft_url}"
+            ])
         self._logger.debug(f"Build command: {' '.join(cmd)}")
         build_result = subprocess.run(cmd)
         if build_result.returncode:
@@ -92,13 +97,15 @@ class MinecraftDockerBuilder:
 
         # Fetch the correct Java version for this build
         java_version = self._config.java_version(minecraft_version=minecraft_version)
-        if not java_version:
-            self._logger.warning(f"No optimal Java version found for Minecraft {minecraft_version}, proceeding with the default ({self._config.latest_java_version})")
-            java_version = self._config.latest_java_version
+        if self._build_type is not MinecraftVersionType.bedrock:
+            if not java_version:
+                self._logger.warning(f"No optimal Java version found for Minecraft {minecraft_version}, proceeding with the default ({self._config.latest_java_version})")
+                java_version = self._config.latest_java_version
 
         # Show build settings
         self._logger.info(f"Selected Minecraft version: {minecraft_version}")
-        self._logger.info(f"Using optimal Java version: {java_version} ({self._config.java_package_name(java_version)})")
+        if self._build_type is not MinecraftVersionType.bedrock:
+            self._logger.info(f"Using optimal Java version: {java_version} ({self._config.java_package_name(java_version)})")
         self._logger.info(f"Upload to DockerHub enabled: {not self._dryrun}")
         self._logger.info(f"Keep image after building: {self._keep_images}")
 
@@ -109,7 +116,7 @@ class MinecraftDockerBuilder:
             downloader = factory.create_downloader(downloader_type=self._build_type, **self._config.logger_config_dict)
             minecraft_url = downloader.get_download_url(version=minecraft_version)
         except Exception as e:
-            self._logger.error(f"Fetching Minecraft jar URL failed with error: {str(e)}")
+            self._logger.error(f"Fetching Minecraft server download URL failed with error: {str(e)}")
             raise ServerDownloadError
 
         # Run docker build

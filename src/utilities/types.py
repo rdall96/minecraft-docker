@@ -8,4 +8,4 @@ class MinecraftVersionType(Enum):
     vanilla = "vanilla"
     forge = "forge"
     # fabric = "fabric"
-    # bedrock = "bedrock"
+    bedrock = "bedrock"

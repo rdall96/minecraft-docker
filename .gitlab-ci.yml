@@ -37,3 +37,18 @@ forge-build:
       - minecraft/forge/*
       - src/*
       - config.yml
+
+# Bedrock
+bedrock-build:
+  stage: build
+  script:
+    - echo "Building Bedrock Minecraft Docker images..."
+    - bash run.sh -t bedrock --minecraft 1.19.2
+  # Run this job only when there are changes to the main branch and they target source code
+  only:
+    refs:
+      - main
+    changes:
+      - minecraft/bedrock/*
+      - src/*
+      - config.yml

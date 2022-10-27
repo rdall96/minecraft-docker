@@ -23,11 +23,6 @@ class ForgeDownloader(Downloader):
 
     def __init__(self, **extra_configs: dict):
         super().__init__(**extra_configs)
-        # Download the version manifest for this downloader
-        self._logger.debug("Retrieving available game versions")
-        json_version_url = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
-        self._versions_manifest_dict = json.loads(
-            Downloader._make_request(json_version_url))
 
     def get_forge_versions(self, minecraft_version: str) -> dict:
         """ Returns a dictionary of forge versions with metadata associated with them """

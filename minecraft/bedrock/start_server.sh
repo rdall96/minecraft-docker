@@ -23,17 +23,17 @@ PROPERTIES[CHAT_RESTRICTION]='chat-restriction'
 PROPERTIES[DEFAULT_PLAYER_PERMISSION_LEVEL]='default-player-permission-level'
 
 # Wipe the server.properties file and re-write it with any overrides found in environment variables
-echo '' > server.properties
-for key in "${!PROPERTIES[@]}"; do
-    # Check if environment variable is set
-    if [[ -n "${!key}" ]]; then
-        echo "${PROPERTIES[$key]}=${!key}" >> server.properties
-    fi
-done
+# echo '' > server.properties
+# for key in "${!PROPERTIES[@]}"; do
+#     # Check if environment variable is set
+#     if [[ -n "${!key}" ]]; then
+#         echo "${PROPERTIES[$key]}=${!key}" >> server.properties
+#     fi
+# done
 # Override the server port to be inline with the Java version
-echo "server-port=25565" >> server.properties
+# echo "server-port=25565" >> server.properties
 # Disable server telemetry
-echo "emit-server-telemetry=false" >> server.properties
+# echo "emit-server-telemetry=false" >> server.properties
 
 # Display current server.properties
 echo -e "Server properties:\n"

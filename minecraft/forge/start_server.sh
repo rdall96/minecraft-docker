@@ -49,4 +49,8 @@ echo -e "\n"
 # Start the server
 cd /minecraft
 echo -e "Starting server...\n"
-bash run.sh --nogui
+if [[ -e "run.sh" ]]; then
+    bash run.sh --nogui
+else
+    java -jar forge*.jar --nogui
+fi

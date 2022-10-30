@@ -56,11 +56,11 @@ minecraft_versions:
   1.11:
     java: 8
   1.12:
-    java: 11
+    java: 8
   1.13:
-    java: 11
+    java: 8
   1.14:
-    java: 11
+    java: 8
   1.15:
     java: 11
   1.16:

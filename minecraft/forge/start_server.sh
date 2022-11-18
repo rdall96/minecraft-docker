@@ -31,6 +31,7 @@ PROPERTIES[SPAWN_NPCS]='spawn-npcs'
 PROPERTIES[SPAWN_ANIMALS]='spawn-animals'
 PROPERTIES[SPAWN_MONSTERS]='spawn-monsters'
 PROPERTIES[SPAWN_PROTECTION]='spawn-protection'
+PROPERTIES[ONLINE_MODE]='online-mode'
 
 # Wipe the server.properties file and re-write it with any overrides found in environment variables
 echo '' > server.properties

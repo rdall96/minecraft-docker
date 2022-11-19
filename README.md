@@ -19,12 +19,12 @@ The new server will be running at `localhost:25565` or `<your-ip-address-here>:2
 ## Customization
 
 ### World data
-You can map the container path to the world file to a local directory on your system in order to persist the data throughout server restarts and updates on a location of your choosing. Just simply add this to your *docker run* command: `-v /minecraft/world:<host-path>`.
+You can map the container path to the world file to a local directory on your system in order to persist the data throughout server restarts and updates on a location of your choosing. Just simply add this to your *docker run* command: `-v <host-path>:/minecraft/world`.
 
 Complete command example mapping the world data to a directory on your desktop:
 ```
 docker run -d --name minecraft \
-    -v /minecraft/world:~/Desktop/minecraft \
+    -v ~/Desktop/minecraft:/minecraft/world \
     -p 25565:25565 \
     -e EULA=true \
     rdall96/minecraft-server:latest
@@ -53,6 +53,7 @@ There are a number of environment variables you can pass to your container in or
 | spawn-animals         | SPAWN_ANIMALS         | true, false                               | true          | Determines whether animals can spawn                                                                                                                                                          |
 | spawn-monsters        | SPAWN_MONSTERS        | true, false                               | true          | Determines whether monsters can spawn                                                                                                                                                         |
 | spawn-protection      | SPAWN_PROTECTION      | (any number)                              | 16            | Determines the side length of the square spawn protection area as 2x+1. Setting this to 0 disables the spawn protection                                                                       |
+| online-mode           | ONLINE_MODE           | true, false                               | true          | Disable player authentication with the Mojang servers                                                                                                                                         |
 
 For more details and information regarding each of the properties above, please consult the [Minecraft wiki on server properties](https://minecraft.fandom.com/wiki/Server.properties#Java_Edition_3)
 
@@ -71,7 +72,7 @@ WHITELIST=true
 This file can then be used to star the Minecraft server as follows:
 ```
 docker run -d --name minecraft \
-    -v /minecraft/world:~/Desktop/minecraft \
+    -v ~/Desktop/minecraft:/minecraft/world \
     -p 25565:25565 \
     --env-file ~/minecraft_server/properties.env \
     rdall96/minecraft-server:latest

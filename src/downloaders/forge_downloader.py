@@ -50,8 +50,9 @@ class ForgeDownloader(Downloader):
         
         data["versions"] = forge_versions
         data["latest"] = forge_versions[-1]
-        if recommended_data:
-            data["recommended"] = recommended_data[0]
+        # disabled to allow for 'true' latest-forge builds
+        # if recommended_data:
+        #     data["recommended"] = recommended_data[0]
         
         return data
 

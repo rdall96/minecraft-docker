@@ -50,9 +50,6 @@ class ForgeDownloader(Downloader):
         
         data["versions"] = forge_versions
         data["latest"] = forge_versions[-1]
-        # disabled to allow for 'true' latest-forge builds
-        # if recommended_data:
-        #     data["recommended"] = recommended_data[0]
         
         return data
 
@@ -83,5 +80,5 @@ class ForgeDownloader(Downloader):
         This will try to use the recommended version of Forge and fallback to the latest version otherwise.
         """
         versions = self.get_forge_versions(minecraft_version=version)
-        forge_version = versions.get("recommended", versions["latest"])
+        forge_version = versions.get("latest")
         return ForgeDownloader._assemble_download_url(version, forge_version)

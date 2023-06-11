@@ -2,8 +2,9 @@
 # forge_downloader.py
 # Copyright (c) 2022 Ricky Dall'Armellina (rdall96@gmail.com). All Rights Reserved.
 
-import json
 import re
+
+from utilities.exceptions import ForgeVersionNotFoundError
 
 from .downloader import Downloader
 
@@ -81,4 +82,7 @@ class ForgeDownloader(Downloader):
         """
         versions = self.get_forge_versions(minecraft_version=version)
         forge_version = versions.get("latest")
+        if not forge_version:
+            self._logger.error(f"No forge version found for Minecraft {version}, does it exist?")
+            raise ForgeVersionNotFoundError
         return ForgeDownloader._assemble_download_url(version, forge_version)

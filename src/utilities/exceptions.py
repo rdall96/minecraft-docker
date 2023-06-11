@@ -8,6 +8,9 @@ class ServerDownloadError(Exception):
 class MinecraftVersionError(Exception):
     """ There is an issue with building this version of Minecraft """
 
+class ForgeVersionNotFoundError(Exception):
+    """ A valid Forge binary was nto found for the selected Minecraft version """
+
 class DockerBuildError(Exception):
     """ Docker failed to build the image """
 

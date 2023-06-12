@@ -6,9 +6,10 @@ from inspect import ClassFoundException
 from utilities import MinecraftVersionType
 
 from .downloader import Downloader
-from .vanilla_downloader import VanillaDownloader
-from .forge_downloader import ForgeDownloader
 from .bedrock_downloader import BedrockDownloader
+from .fabric_downloader import FabricDownloader
+from .forge_downloader import ForgeDownloader
+from .vanilla_downloader import VanillaDownloader
 
 class DownloaderFactory:
     

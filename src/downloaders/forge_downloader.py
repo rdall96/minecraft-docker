@@ -70,10 +70,6 @@ class ForgeDownloader(Downloader):
         """ Dictionary of released game versions and url downloads """
         raise NotImplementedError()
 
-    def get_available_game_versions(self) -> list:
-        """ Returns a list of available game versions """
-        return list(self._game_versions().keys())
-
     def get_download_url(self, version: str) -> str:
         """ Returns the URL where to download the specified server version """
         """

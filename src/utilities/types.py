@@ -7,5 +7,5 @@ from enum import Enum
 class MinecraftVersionType(Enum):
     vanilla = "vanilla"
     forge = "forge"
-    # fabric = "fabric"
+    fabric = "fabric"
     bedrock = "bedrock"

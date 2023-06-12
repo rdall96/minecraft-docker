@@ -7,7 +7,7 @@ import subprocess
 
 import click
 
-from downloaders import DownloaderFactory, VanillaDownloader, ForgeDownloader
+from downloaders import DownloaderFactory, VanillaDownloader, ForgeDownloader, FabricDownloader
 from utilities import Config, Logger, MinecraftVersionType
 from utilities.exceptions import *
 
@@ -172,11 +172,16 @@ class MinecraftDockerBuilder:
             if is_latest:
                 # Add the 'latest' tag as this is the newest Minecraft version
                 tags.append("latest")
-        # forge - we don't use the latest tag with forge,
-        # we instead pick the latest available forge and add the version number ot the tag
+        # forge/fabric - we don't use the latest tag with forge and fabric,
+        # we instead pick the latest available forge/fabric and add the version number to the tag
         elif build_type == MinecraftVersionType.forge:
             downloader = ForgeDownloader(**logger_config)
             versions = downloader.get_forge_versions(minecraft_version=minecraft_version)
+            latest_forge_version = versions.get("latest")
+            tags.append(f"{minecraft_version}-{build_type.value}_{latest_forge_version}")
+        elif build_type == MinecraftVersionType.fabric:
+            downloader = FabricDownloader(**logger_config)
+            versions = downloader.get_fabric_versions(minecraft_version=minecraft_version)
             latest_forge_version = versions.get("latest")
             tags.append(f"{minecraft_version}-{build_type.value}_{latest_forge_version}")
         else:

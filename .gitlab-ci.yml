@@ -52,3 +52,18 @@ bedrock-build:
       - minecraft/bedrock/*
       - src/*
       - config.yml
+
+# Fabric
+fabric-build:
+  stage: build
+  script:
+    - echo "Building Fabric Minecraft Docker images..."
+    - bash run.sh -t fabric --minecraft "$MINECRAFT_VERSION"
+  # Run this job only when there are changes to the main branch and they target source code
+  only:
+    refs:
+      - main
+    changes:
+      - minecraft/fabric/*
+      - src/*
+      - config.yml

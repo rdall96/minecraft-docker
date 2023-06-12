@@ -11,8 +11,8 @@ from .downloader import Downloader
 # URLs
 LIST_FABRIC_LOADERS_URL_FORMAT = "https://meta.fabricmc.net/v2/versions/loader/{}" # needs Minecraft version (i.e.: 1.20)
 LIST_FABRIC_INSTALLERS_URL = "https://meta.fabricmc.net/v2/versions/installer"
-# needs Minecraft version, fabric "loader/installer" string
-JAR_DOWNLOAD_LINK_TEMPLATE_STRING = "https://meta.fabricmc.net/v2/versions/loader/{minecraft}/{fabric}/server/jar"
+# needs Minecraft version, fabric loader and installer versions
+JAR_DOWNLOAD_LINK_TEMPLATE_STRING = "https://meta.fabricmc.net/v2/versions/loader/{minecraft}/{loader}/{installer}/server/jar"
 
 
 class FabricDownloader(Downloader):
@@ -29,13 +29,13 @@ class FabricDownloader(Downloader):
         {
             "versions": [
                 {
-                    "version": str
+                    "version": str,
                     "stable": bool
                 }
             ],
             "latest": {
-                "version": str
-                "stable": bool
+                "loader": str
+                "installer": str
             }
         }
         """
@@ -83,7 +83,7 @@ class FabricDownloader(Downloader):
         # We only need the information in "loader" and "intermediary", and check for stable versions (unless otherwise specified)
 
         # keep an impossible build revision for the latest, so we can assign it in the following loop if the value is greater
-        latest = {}
+        latest_loader = {}
         for item in loader_content:
             loader = item.get("loader", {})
             intermediary = item.get("intermediary", {})
@@ -108,21 +108,25 @@ class FabricDownloader(Downloader):
             version_data = {
                 "rev": rev,
                 "stable": is_stable,
-                "version": f"{loader_version}/{installer_version}"
+                "version": loader_version
             }
             data["versions"].append(version_data)
-            if rev > latest.get("rev", -1):
-                latest = version_data
+            if rev > latest_loader.get("rev", -1):
+                latest_loader = version_data
 
-        data["latest"] = latest.get("version")
+        data["latest"] = {
+            "loader": latest_loader.get("version"),
+            "installer": installer_version
+        }
         return data
     
     @staticmethod
-    def _assemble_download_url(minecraft_version: str, fabric_version: str) -> str:
-        """ Build a url to download forge for a given Minecraft version """
+    def _assemble_download_url(minecraft_version: str, fabric_loader: str, fabric_installer: str) -> str:
+        """ Build a url to download fabric for a given Minecraft version """
         return JAR_DOWNLOAD_LINK_TEMPLATE_STRING.format(
             minecraft=minecraft_version,
-            fabric=fabric_version
+            loader=fabric_loader,
+            installer=fabric_installer
         )
 
     def _get_file_name(self, version: str) -> str:
@@ -136,9 +140,8 @@ class FabricDownloader(Downloader):
     def get_download_url(self, version: str) -> str:
         """ Returns the URL where to download the specified server version """
         versions = self.get_fabric_versions(minecraft_version=version)
-        print(versions)
-        fabric_version = versions.get("latest", {})
-        if not fabric_version:
+        latest = versions.get("latest")
+        if not latest:
             self._logger.error(f"No fabric version found for Minecraft {version}, does it exist?")
             raise FabricVersionNotFoundError
-        return FabricDownloader._assemble_download_url(version, fabric_version)
+        return FabricDownloader._assemble_download_url(version, latest.get("loader"), latest.get("installer"))

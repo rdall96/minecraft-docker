@@ -182,7 +182,7 @@ class MinecraftDockerBuilder:
         elif build_type == MinecraftVersionType.fabric:
             downloader = FabricDownloader(**logger_config)
             versions = downloader.get_fabric_versions(minecraft_version=minecraft_version)
-            latest_forge_version = versions.get("latest")
+            latest_forge_version = versions.get("latest").get("loader")
             tags.append(f"{minecraft_version}-{build_type.value}_{latest_forge_version}")
         else:
             tags.append(f"{minecraft_version}-{build_type.value}")

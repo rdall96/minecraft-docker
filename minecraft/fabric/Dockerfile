@@ -27,3 +27,5 @@ ENTRYPOINT [ "/minecraft/start_server.sh" ]
 # Set the 'world' and 'mods' folders as volumes to persist data
 VOLUME [ "/minecraft/world" ]
 VOLUME [ "/minecraft/mods" ]
+# Expose server port
+EXPOSE 25565

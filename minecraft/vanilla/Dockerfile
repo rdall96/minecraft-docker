@@ -26,3 +26,5 @@ COPY start_server.sh .
 ENTRYPOINT [ "/minecraft/start_server.sh" ]
 # Set the 'world' folder as a volume to persist data
 VOLUME [ "/minecraft/world" ]
+# Expose server port
+EXPOSE 25565

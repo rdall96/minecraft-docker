@@ -8,15 +8,9 @@ variables:
 stages:
   - build
 
-before_script:
-  - apt update
-  - apt install python3 python3-pip python3-venv
-
 # Vanilla
 vanilla-build:
   stage: build
-  services:
-    - docker:dind
   script:
     - echo "Building Vanilla Minecraft Docker images..."
     - bash run.sh --minecraft "$MINECRAFT_VERSION"

@@ -45,6 +45,15 @@ class Config:
     def _supported_java_versions(self) -> dict:
         return self._data["supported_java_versions"]
     
+    @staticmethod
+    def _sanitized_minecraft_version(version: str) -> str:
+        # Remove the patch number from the Minecraft versions
+        version_numbers = version.split(".")
+        if len(version_numbers) > 2:
+            return ".".join(version_numbers[:-1])
+        else:
+            return version
+    
     def java_package_name(self, version: int) -> str:
         return self._supported_java_versions.get(version, {}).get("package_name")
     
@@ -55,8 +64,5 @@ class Config:
             return self._data.get("minecraft_versions", {})
 
     def java_version(self, minecraft_version: str) -> int:
-        # Remove the patch number from the Minecraft versions
-        version_numbers = minecraft_version.split(".")
-        if len(version_numbers) > 2:
-            minecraft_version = ".".join(version_numbers[:-1])
+        minecraft_version = Config._sanitized_minecraft_version(version=minecraft_version)
         return self._minecraft_version_data(version=minecraft_version).get("java")

@@ -22,10 +22,6 @@ WORKDIR /minecraft
 ADD "${MINECRAFT_JAR_URL}" fabric_server.jar
 COPY start_server.sh .
 
-# Set the entry point for the container
-ENTRYPOINT [ "/minecraft/start_server.sh" ]
-# Set the 'world' and 'mods' folders as volumes to persist data
-VOLUME [ "/minecraft/world" ]
-VOLUME [ "/minecraft/mods" ]
-# Expose server port
 EXPOSE 25565
+VOLUME [ "/minecraft/world", "/minecraft/mods", "/minecraft/configurations" ]
+ENTRYPOINT [ "/minecraft/start_server.sh" ]

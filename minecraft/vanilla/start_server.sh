@@ -4,9 +4,7 @@
 # set -o errexit
 
 # Print out the java version
-echo "Java Runtime:"
-java --version
-echo -e "\n"
+java -version
 
 # Set EULA
 echo "eula=$EULA" > eula.txt
@@ -53,10 +51,33 @@ for key in "${!PROPERTIES[@]}"; do
     fi
 done
 
+# Persistent server configuration files (i.e.: whitelist, ops, etc...)
+LEGACY_CONFIG_FILES=(
+    "white-list.txt" "ops.txt" "banned-players.txt"
+)
+CONFIG_FILES=(
+    "whitelist.json" "ops.json" "banned-players.json"
+)
+# Create the persistent server configuration file (if they don't exist already)
+for file_name in "${LEGACY_CONFIG_FILES[@]}"; do
+    touch "/minecraft/configurations/$file_name"
+    # Create symlinks to the server persistent configurations
+    ln -sf "/minecraft/configurations/$file_name" "/minecraft/$file_name"
+done
+# Create the persistent server configuration file (if they don't exist already)
+for file_name in "${CONFIG_FILES[@]}"; do
+    if [[ ! -e "/minecraft/configurations/$file_name" ]]; then
+        echo "[]" > "/minecraft/configurations/$file_name"
+    fi
+    # Create symlinks to the server persistent configurations
+    ln -sf "/minecraft/configurations/$file_name" "/minecraft/$file_name"
+done
+# Add a guide to what these configuration files are for
+echo -e '# Minecraft server configuration files\n\nText files (.txt) are for legacy versions (prior to 1.8), any new version of Minecraft will use the JSON format.\nIf your server is running Minecraft 1.8 or newer, you can delete the old (txt) files.' > /minecraft/configurations/README.txt
+
 # Display current server.properties
-echo -e "Server properties:\n"
+echo -e "\nServer properties:"
 cat server.properties
-echo -e "\n"
 
 # Start the server
 cd /minecraft

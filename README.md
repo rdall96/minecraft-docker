@@ -39,6 +39,19 @@ docker run -d --name minecraft \
 
 For modded versions of Minecraft, you will likely want to map more folders to volumes like `mods` folders, or other configs. All the Minecraft server files can be found in the image at `/minecraft`, so for example the `mods folder can be found at `/minecraft/mods`.
 
+If you're setting server operators (ops), a server whitelist, and/or banning players and want to persist those configurations on your local file system, map the `/minecraft/configurations` directory.
+Here's an example with the white list enabled and the configuration mapped to a local directory:
+```
+docker run -d --name minecraft \
+    -v ~/Desktop/minecraft/world:/minecraft/world \
+    -v ~/Desktop/minecraft/configurations:/minecraft/configurations \
+    -p 25565:25565 \
+    -e EULA=true \
+    -e WHITE_LIST=true \
+    rdall96/minecraft-server:latest
+```
+The `/minecraft/configurations` directory will contain files for the JSON configurations (i.e.: whitelist.json), as well as the legacy text format (.txt). For more information consult the guide in the README that is generated in that directory upon creation.
+
 ### Server properties
 There are a number of environment variables you can pass to your container in order to customize the **server.properties** file associated with a Minecraft server. Below is a complete list.
 

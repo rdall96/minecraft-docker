@@ -1,69 +1,98 @@
-# Minecraft Docker Compiler
+# Minecraft Docker Builder
 # GitLab CI/CD configuration
 
-variables:
-  # The version of Minecraft to build, by default, all of them
-  MINECRAFT_VERSION: "all"
-
 stages:
-  - build
+  - test
+  - build-cli
+  - create-image
 
-# Vanilla
-vanilla-build:
-  stage: build
+variables:
+  CLI_IMAGE_NAME: "rdall96/minecraft-docker"
+  RELEASE_TAG: '/^\d.\d.\d$/'
+  # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  # Tag to use when building images
+  CLI_IMAGE_TAG: "latest"
+
+default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+# Build the CLI for testing
+cli-build:
+  stage: test
   script:
-    - echo "Building Vanilla Minecraft Docker images..."
-    - bash run.sh --minecraft "$MINECRAFT_VERSION"
-  # Run this job only when there are changes to the main branch and they target source code
-  only:
-    refs:
-      - main
-    changes:
-      - minecraft/vanilla/*
-      - src/*
-      - config.yml
+    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:latest .
+    - docker run --rm $CI_REGISTRY/$CLI_IMAGE_NAME:latest --help
+  rules:
+    # only run this job for merge requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  tags:
+    - build
 
-# Forge
-forge-build:
-  stage: build
+# Build the CLI for release
+release-cli-build:
+  stage: build-cli
   script:
-    - echo "Building Forge Minecraft Docker images..."
-    - bash run.sh -t forge --minecraft "$MINECRAFT_VERSION"
-  # Run this job only when there are changes to the main branch and they target source code
-  only:
-    refs:
-      - main
-    changes:
-      - minecraft/forge/*
-      - src/*
-      - config.yml
+    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG .
+    - docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG
+    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+  rules:
+    # only run this job when a new release tag is created
+    - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
+  tags:
+    - build
 
-# Bedrock - disabled until this is fixed: https://gitlab.com/rdall96/minecraft-docker/-/issues/7
-# bedrock-build:
-#   stage: build
-#   script:
-#     - echo "Building Bedrock Minecraft Docker images..."
-#     - bash run.sh -t bedrock --minecraft 1.19.2
-#   # Run this job only when there are changes to the main branch and they target source code
-#   only:
-#     refs:
-#       - main
-#     changes:
-#       - minecraft/bedrock/*
-#       - src/*
-#       - config.yml
-
-# Fabric
-fabric-build:
-  stage: build
+# Build the CLI for debugging
+dev-cli-build:
+  stage: build-cli
   script:
-    - echo "Building Fabric Minecraft Docker images..."
-    - bash run.sh -t fabric --minecraft "$MINECRAFT_VERSION"
-  # Run this job only when there are changes to the main branch and they target source code
-  only:
-    refs:
-      - main
-    changes:
-      - minecraft/fabric/*
-      - src/*
-      - config.yml
+    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA . --build-arg BUILD_TYPE=debug
+    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA
+  rules:
+    # only run this job when a new commit is created and we don't have a tag
+    - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
+      when: never
+    # allow build tagging in merge requests (optional)
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
+    # and if we have changes in relevant files when pushing a new commit
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - Dockerfile
+        - Sources/**/*
+        - Package.*
+      when: always
+  tags:
+    - build
+
+
+# Scheduled builds
+
+minecraft-server:
+  stage: create-image
+  script:
+    - echo "Building Docker image for $MINECRAFT_TYPE Minecraft version $MINECRAFT_VERSION"
+    - docker pull $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG
+    # Logout from GitLab registry
+    - docker logout $CI_REGISTRY
+    # Run the build
+    - |
+      docker run --rm \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG \
+      build -t $MINECRAFT_TYPE -v $MINECRAFT_VERSION \
+      --push -u $MINECRAFT_SERVER_REPOSITORY_USERNAME -p $MINECRAFT_SERVER_REPOSITORY_PASSWORD \
+      --clean
+  rules:
+    - if: $MINECRAFT_VERSION == null || $MINECRAFT_VERSION == ""
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  tags:
+    - run

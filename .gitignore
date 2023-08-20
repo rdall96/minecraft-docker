@@ -1,21 +1,9 @@
-# macOS files
+Packages
+.build
+xcuserdata
+*.xcodeproj
+DerivedData/
 .DS_Store
-
-# IDE Files
-.idea
-*.pyc
-.vscode/
-
-# Build files
-build/
-dist/
-*.egg-info/
-__pycache__
-
-# Environment
-venv/
-env/
-
-# Other files
-tmp/
-minecraft/server
+data/
+.swiftpm
+.env

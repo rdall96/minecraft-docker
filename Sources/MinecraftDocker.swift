@@ -15,8 +15,11 @@ struct MinecraftDocker: AsyncParsableCommand {
     )
     
     static private let commands: [ParsableCommand.Type] = [
-        ListCommand.self,
+        VersionCommand.self,
+        
+        // TODO: Create a list command to show running containers when the DockerSwiftAPI library supports the running image in the `Docker.Container` model
         DownloadCommand.self,
         BuildCommand.self,
+        RunCommand.self,
     ]
 }

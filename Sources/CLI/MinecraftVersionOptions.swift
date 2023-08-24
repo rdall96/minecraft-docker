@@ -10,7 +10,7 @@ import ArgumentParser
 
 struct MinecraftVersionOptions: ParsableArguments {
     
-    @Option(name: .shortAndLong, help: "The type of Minecraft server to download.")
+    @Option(name: .shortAndLong, help: "The type of Minecraft server.")
     var type: MinecraftType = .vanilla
     
     @Option(name: .shortAndLong, help: "The game version to use (i.e.: 1.20.1). \"latest\" and \"all\" are also valid options.")
@@ -20,5 +20,9 @@ struct MinecraftVersionOptions: ParsableArguments {
         if version.rawValue.isEmpty {
             throw ValidationError("The Minecraft version cannot be empty")
         }
+    }
+    
+    var description: String {
+        "Minecraft \(type), version \(version)"
     }
 }

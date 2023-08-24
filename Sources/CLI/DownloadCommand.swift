@@ -1,5 +1,5 @@
 //
-//  Download.swift
+//  DownloadCommand.swift
 //
 //
 //  Created by Ricky Dall'Armellina on 8/10/23.
@@ -18,17 +18,42 @@ struct DownloadCommand: AsyncParsableCommand {
     @OptionGroup
     var minecraft: MinecraftVersionOptions
     
+    @Flag(name: .shortAndLong, help: "Only list out the available server versions for the given minecraft server type.")
+    var list: Bool = false
+    
     @Option(name: [.customShort("o"), .customLong("output")], help: "Directory where to download the server executable. If the directory doesn't exist, it will be created. If it's unspeccified, the file will be saved in the current directory.")
     var path: String? = nil
     
     func validate() throws {
-        if let path, URL(string: path) == nil {
+        // validate the download path
+        if let path, resolvedPath(for: path) == nil {
             throw ValidationError("Invalid download path \(path)")
         }
     }
     
     func run() async {
         let downloader = MinecraftDownloader(type: minecraft.type)
+        
+        // list the versions and quit if specified
+        if list {
+            MinecraftDockerLog.log("Listing available versions for Minecraft \(minecraft.type)")
+            do {
+                var versions = try await downloader.runtimeProvider.availableVersions
+                    .sorted(by: >)
+                guard !versions.isEmpty else {
+                    MinecraftDockerLog.error("No available Minecraft server versions found for \(minecraft.type)")
+                    return
+                }
+                // add the latest tag to the first version
+                versions[0] = .init(versions[0].rawValue + " (latest)")
+                let versionsList = versions.map({ $0.rawValue }).joined(separator: ", ")
+                MinecraftDockerLog.log("Available Minecraft versions for \(minecraft.type): \(versionsList)")
+            }
+            catch {
+                MinecraftDockerLog.error("An error occurred fetching the available Minecraft versions: \(error)")
+            }
+            return
+        }
         
         // If the version is `latest`, find it
         var downloadVersion = minecraft.version
@@ -46,13 +71,7 @@ struct DownloadCommand: AsyncParsableCommand {
         // if the path is nil, then use the current directory
         let pathUrl: URL
         if let path {
-            if path.contains("~") {
-                pathUrl = FileManager.default.homeDirectoryForCurrentUser
-                    .appendingPathComponent(path.replacingOccurrences(of: "~/", with: ""))
-            }
-            else {
-                pathUrl = URL(string: path)! // this was alredy validated
-            }
+            pathUrl = resolvedPath(for: path)! // this was alredy validated
             // create the directory if it doesn't exist
             do {
                 try FileManager.default.createDirectory(at: pathUrl, withIntermediateDirectories: true)

@@ -7,6 +7,7 @@
 
 import Foundation
 import ArgumentParser
+import DockerSwiftAPI
 
 // MARK: - Minecraft Version
 
@@ -79,6 +80,14 @@ enum MinecraftType: String, CustomStringConvertible {
             return "Modded Java with the Fabric mod loader"
         case .forge:
             return "Modded Java with the Forge mod loader"
+        }
+    }
+    
+    /// Name of the `latest` image tag for this type of Minecraft
+    var latestTag: Docker.Tag {
+        if self == .vanilla { return .init("latest") }
+        else {
+            return .init("\(rawValue)_latest")
         }
     }
 }

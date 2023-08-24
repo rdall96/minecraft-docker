@@ -26,8 +26,8 @@ default:
 cli-build:
   stage: test
   script:
-    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:latest .
-    - docker run --rm $CI_REGISTRY/$CLI_IMAGE_NAME:latest --help
+    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - docker run --rm $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA --help
   rules:
     # only run this job for merge requests
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -38,10 +38,16 @@ cli-build:
 release-cli-build:
   stage: build-cli
   script:
-    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG .
-    - docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+    - |
+      docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG . \
+      --build-arg CLI_VERSION=$CI_COMMIT_TAG
     - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG
-    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+    # only tag and push the latest if this is the default release branch
+    - |
+      if [[ $CI_COMMIT_REF_NAME == "main" ]]; then
+      docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+      docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+      fi
   rules:
     # only run this job when a new release tag is created
     - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
@@ -52,7 +58,10 @@ release-cli-build:
 dev-cli-build:
   stage: build-cli
   script:
-    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA . --build-arg BUILD_TYPE=debug
+    - |
+      docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA . \
+      --build-arg CLI_VERSION=dev-$CI_COMMIT_SHORT_SHA \
+      --build-arg BUILD_TYPE=debug
     - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA
   rules:
     # only run this job when a new commit is created and we don't have a tag
@@ -82,6 +91,12 @@ minecraft-server:
     - docker pull $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG
     # Logout from GitLab registry
     - docker logout $CI_REGISTRY
+    # Print out the version being used
+    - |
+      docker run --rm \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG \
+      version
     # Run the build
     - |
       docker run --rm \

@@ -200,7 +200,17 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         
         // build the image
         let image = Docker.Image("\(imageName):\(runtime.name)")
-        let result = try await Docker.build(path: buildPath, tag: image)
+        // FIXME: the build hangs if it takes a long time (i.e.: forge), but it works fine the second time around, when there's a build cache.
+        // The current workaround is to kill this task if it takes longer than a few minutes and restart it, which will yield a better success rate.
+        // The actual root cause it probably in the DockerSwiftAPI library, so this workaround is necessary until that is fixed.
+        // Only do this for forge builds since they are the only ones that hang
+        let result: Docker.BuildResult
+        switch minecraftType {
+        case .forge:
+            result = try await buildWithCache(buildPath: buildPath, image: image)
+        default:
+            result = try await Docker.build(path: buildPath, tag: image)
+        }
         
         // remove the build env
         try FileManager.default.removeItem(at: buildPath)
@@ -214,13 +224,45 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
             var builtImages = [image]
             // also tag the latest image if necessary
             if tagLatest {
-                let latestTag: Docker.Image = .init(imageName)
-                try await Docker.tag(latestTag, source: image)
-                builtImages.append(latestTag)
+                let latestImage = image.withNewTag(generateLatestTag(version: minecraftVersion, type: minecraftType))
+                try await Docker.tag(latestImage, source: image)
+                builtImages.append(latestImage)
             }
             return builtImages
         case .failed(let error):
             throw MinecraftDockerError.buildError(error.localizedDescription)
         }
     }
+}
+
+extension Docker.Image {
+    fileprivate func withNewTag(_ tag: Docker.Tag) -> Docker.Image {
+        .init(
+            repository: self.repository,
+            name: self.name,
+            tag: tag
+        )
+    }
+}
+
+fileprivate func generateLatestTag(version: MinecraftVersion, type: MinecraftType) -> Docker.Tag {
+    switch type {
+    case .vanilla:
+        return type.latestTag
+    case .fabric, .forge:
+        return .init("\(version)-\(type.latestTag.name)")
+    }
+}
+
+// TODO: Remove this when the cache build issues have been fixed in the DockerSwiftAPI library (see FIXME above)
+fileprivate func buildWithCache(buildPath: URL, image: Docker.Image) async throws -> Docker.BuildResult {
+    let buildTask = Task { _ = try await Docker.build(path: buildPath, tag: image) }
+    // check if the build is done every second, up to 5 minutes - there will be an image on the system
+    for _ in 1...300 {
+        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconds
+        if try await Docker.images.contains(image) { break }
+    }
+    // cancel the build task and start a new one, which will use the cache and complete immediately (hopefully)
+    buildTask.cancel()
+    return try await Docker.build(path: buildPath, tag: image)
 }

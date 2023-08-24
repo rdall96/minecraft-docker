@@ -43,6 +43,8 @@ RUN cp \
 # ================================
 FROM ubuntu:jammy
 
+ARG CLI_VERSION="(unknown)"
+
 ENV APP_HOME="/app"
 
 # Make sure all system packages are up to date, and install only essential packages.
@@ -72,6 +74,8 @@ WORKDIR ${APP_HOME}
 
 # Copy built executable
 COPY --from=build /staging ${APP_HOME}
+# Create the version file
+RUN echo "$CLI_VERSION" > ${APP_HOME}/version
 
 # Volume to download data to
 VOLUME [ "/data" ]

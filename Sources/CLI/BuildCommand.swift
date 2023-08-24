@@ -35,7 +35,7 @@ struct BuildCommand: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Force push the image to the registry.")
     var force: Bool = false
     
-    @Flag(name: .shortAndLong, help: "Remove artifacts after the task is completed.")
+    @Flag(help: "Remove artifacts after the task is completed.")
     var clean: Bool = false
     
     func validate() throws {
@@ -120,7 +120,7 @@ struct BuildCommand: AsyncParsableCommand {
         return removedCount
     }
     
-    private func build(version: MinecraftVersion, with builder: MinecraftBuilder) async -> [Docker.Image] {
+    private func build(version: MinecraftVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> [Docker.Image] {
         MinecraftDockerLog.info("Building version \(version) ...")
         do {
             var images = [Docker.Image]()
@@ -128,7 +128,7 @@ struct BuildCommand: AsyncParsableCommand {
                 images = try await builder.build(
                     minecraftVersion: version,
                     imageName: name,
-                    tagLatest: (minecraft.type == .vanilla) && (minecraft.version == .latest)
+                    tagLatest: tagLatest
                 )
             }
             if images.isEmpty {
@@ -149,7 +149,7 @@ struct BuildCommand: AsyncParsableCommand {
     }
     
     func run() async throws {
-        MinecraftDockerLog.log("Building Minecraft \(minecraft.type) version \(minecraft.version)")
+        MinecraftDockerLog.log("Building \(minecraft.description)")
         
         // If this run will require a push, try to login before building anything
         if push {
@@ -181,16 +181,21 @@ struct BuildCommand: AsyncParsableCommand {
             runtimeProvider = ForgeRuntimeProvider(session: session)
         }
         var versionsToBuild = [MinecraftVersion]()
+        var hasLatestImage = false // track if we are going to be be building the latest image, so we can choose to tag it later
         if minecraft.version == .all {
             versionsToBuild = (try? await runtimeProvider.availableVersions) ?? []
+            hasLatestImage = true
         }
         else if minecraft.version == .latest {
             if let version = try? await runtimeProvider.latestVersion {
                 versionsToBuild = [version]
+                hasLatestImage = true
             }
         }
         else {
             versionsToBuild = [minecraft.version]
+            // this could be the latest version if one were to specify it manually
+            // we're not going to tag it as `latest` because a manual build is likely intentional to only build a specific version
         }
         if versionsToBuild.isEmpty {
             MinecraftDockerLog.error("No versions to build provided!")
@@ -198,17 +203,24 @@ struct BuildCommand: AsyncParsableCommand {
         }
         
         // build the images
-        var images = [Docker.Image]()
+        var builtImages = [Docker.Image]()
+        // only tag the latest image if we are tracking it (in the imagesToBuild list)
+        let possibleLatestImage = hasLatestImage ? versionsToBuild.first : nil
         for version in versionsToBuild.reversed() {
-            images.append(contentsOf: await build(version: version, with: builder))
+            let builtImage = await build(
+                version: version,
+                with: builder,
+                tagLatest: version == possibleLatestImage
+            )
+            builtImages.append(contentsOf: builtImage)
         }
         
         // push
         if push {
-            MinecraftDockerLog.log("Will push \(images.count) image(s) to remote")
+            MinecraftDockerLog.log("Will push \(builtImages.count) image(s) to remote")
             do {
                 try await runFunctionAndTrack {
-                    try await push(images: images)
+                    try await push(images: builtImages)
                 }
             }
             catch let error as DockerError {
@@ -225,7 +237,7 @@ struct BuildCommand: AsyncParsableCommand {
         if clean {
             MinecraftDockerLog.info("Removing built artifacts")
             do {
-                let removedCount = try await clean(images: images)
+                let removedCount = try await clean(images: builtImages)
                 MinecraftDockerLog.log("Removed \(removedCount) built image(s)")
             }
             catch let error as DockerError {

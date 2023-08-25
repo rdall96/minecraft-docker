@@ -42,12 +42,8 @@ release-cli-build:
       docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG . \
       --build-arg CLI_VERSION=$CI_COMMIT_TAG
     - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG
-    # only tag and push the latest if this is a protect branch
-    - |
-      if [[ $CI_COMMIT_REF_PROTECTED == "true" ]]; then
-      docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
-      docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
-      fi
+    - docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
+    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
   rules:
     # only run this job when a new release tag is created
     - if: $CI_COMMIT_TAG =~ $RELEASE_TAG

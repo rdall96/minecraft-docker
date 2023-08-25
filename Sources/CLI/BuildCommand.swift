@@ -64,51 +64,43 @@ struct BuildCommand: AsyncParsableCommand {
         MinecraftDockerLog.log("Successfully logged into remote repository as \(username)")
     }
     
-    private func push(image: Docker.Image) async {
-        do {
-            MinecraftDockerLog.info("Pushing \(image.description)")
-            try await Docker.push(image)
-            MinecraftDockerLog.log("Pushed \(image.description) to remote")
+    private func push(image: Docker.Image) async throws {
+        func _push(_ image: Docker.Image) async {
+            do {
+                MinecraftDockerLog.info("Pushing \(image)")
+                try await Docker.push(image)
+                MinecraftDockerLog.log("Pushed \(image) to remote")
+            }
+            catch let error as DockerError {
+                MinecraftDockerLog.error("Failed to push \(image) to remote repository: \(error.errorDescription)")
+            }
+            catch {
+                MinecraftDockerLog.error("An unknown error occurred: \(error)")
+            }
         }
-        catch let error as DockerError {
-            MinecraftDockerLog.error("Failed to push \(image.description) to remote repository: \(error.errorDescription)")
-        }
-        catch {
-            MinecraftDockerLog.error("An unknown error occurred: \(error)")
-        }
-    }
-    
-    private func push(images: [Docker.Image]) async throws {
-        // cache the existing tags
-        let imageComponenets = name.split(separator: "/").map({ String($0) })
-        guard let repositoryNamespace = imageComponenets.first else {
-            MinecraftDockerLog.critical(.missingRepositoryNamespace)
-            throw MinecraftDockerError.missingRepositoryNamespace
-        }
-        guard let repopsitoryName = imageComponenets.last else {
-            MinecraftDockerLog.critical(.missingRepositoryName)
-            throw MinecraftDockerError.missingRepositoryName
-        }
-        let repository = try await DockerHub.repositories(for: repositoryNamespace).first {
-            $0.name == repopsitoryName
-        }!
-        let existingTags = try await DockerHub.tags(for: repository)
         
-        // push images
-        for image in images {
-            // if we have `force` just push the image
-            if force {
-                MinecraftDockerLog.info("Force push is set, pushing image \(image.description)")
-                await push(image: image)
-                continue
-            }
-            // otherwise check if it already exists in the remote repo
-            if !existingTags.filter({ $0.name == image.tag.name }).isEmpty {
-                MinecraftDockerLog.warning("Remote tag \(image.description) already exists! Ignoring.")
-                continue
-            }
-            await push(image: image)
+        // if we have `force` just push the image
+        if force {
+            MinecraftDockerLog.info("Force push is set, pushing image \(image)")
+            await _push(image)
+            return
         }
+        
+        // manifest for the remote image
+        guard let remoteImageManifest = (try? await Docker.manifest(for: image))?.first else {
+            // remote image doesn't exist
+            await _push(image)
+            return
+        }
+        // info for the local image
+        let imageInfo = try await Docker.inspect(image: image)
+        
+        let remoteImageTagExists = remoteImageManifest.config.digest == imageInfo.id
+        if remoteImageTagExists {
+            MinecraftDockerLog.warning("Remote tag \(image) already exists! Ignoring.")
+            return
+        }
+        await _push(image)
     }
     
     private func clean(images: [Docker.Image]) async throws -> UInt {
@@ -220,7 +212,9 @@ struct BuildCommand: AsyncParsableCommand {
             MinecraftDockerLog.log("Will push \(builtImages.count) image(s) to remote")
             do {
                 try await runFunctionAndTrack {
-                    try await push(images: builtImages)
+                    for image in builtImages {
+                        try await push(image: image)
+                    }
                 }
             }
             catch let error as DockerError {

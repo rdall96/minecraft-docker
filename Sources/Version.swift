@@ -19,10 +19,17 @@ enum Version: String {
      - Fix for hanging `forge` builds.
      */
     case v2_1_0 = "2.1.0"
+    
+    /**
+     - Images won't be pushed to the remote if they have the same ID (cached builds).
+     - Run command now supports cleaning cleaning the container artifacts after it is stopped.
+     - Reduced the timeout for cached builds (forge workaround implemented in version 2.1.0) to 2 minutes to speed up bulk builds.
+     */
+    case v2_1_1 = "2.1.1"
 }
 
 extension Version {
-    static var current: Self = .v2_1_0
+    static var current: Self = .v2_1_1
 }
 
 extension Version: CustomStringConvertible {

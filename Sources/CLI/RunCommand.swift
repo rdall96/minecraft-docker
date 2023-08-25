@@ -28,9 +28,8 @@ struct RunCommand: AsyncParsableCommand {
     @Flag(help: "Build the image before running it if it's not found on the system.")
     var build: Bool = false
     
-    // TODO: Enable when `Docker.run()` supports removing the container when it exists
-//    @Flag(help: "Remove the Docker container after the server stops.")
-//    var clean: Bool = false
+    @Flag(help: "Remove the Docker container after the server stops.")
+    var clean: Bool = false
     
     func validate() throws {
         // the name cannot contain spaces
@@ -92,6 +91,7 @@ struct RunCommand: AsyncParsableCommand {
                     environment: [.acceptEula], // not support for other environemnt variables yet, so jsut accept the EULA
                     name: name ?? "minecraft-server-\(minecraft.type.rawValue)_\(minecraft.version)",
                     ports: [.defaults],
+                    removeWhenStopped: clean,
                     volumes: gameDirectories.enumerated().map { index, directory in
                         .init(
                             hostPath: directory.path,

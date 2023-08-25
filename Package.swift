@@ -12,7 +12,7 @@ let package = Package(
         // Logging
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
         // Docker api
-        .package(url: "https://gitlab.com/rdall96/docker-swift-api", from: "1.2.0"),
+        .package(url: "https://gitlab.com/rdall96/docker-swift-api", from: "1.3.0"),
         // HTML parser
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.1"),
     ],

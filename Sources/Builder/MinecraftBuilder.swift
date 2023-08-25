@@ -240,7 +240,8 @@ extension Docker.Image {
         .init(
             repository: self.repository,
             name: self.name,
-            tag: tag
+            tag: tag,
+            digest: digest
         )
     }
 }
@@ -257,8 +258,8 @@ fileprivate func generateLatestTag(version: MinecraftVersion, type: MinecraftTyp
 // TODO: Remove this when the cache build issues have been fixed in the DockerSwiftAPI library (see FIXME above)
 fileprivate func buildWithCache(buildPath: URL, image: Docker.Image) async throws -> Docker.BuildResult {
     let buildTask = Task { _ = try await Docker.build(path: buildPath, tag: image) }
-    // check if the build is done every second, up to 5 minutes - there will be an image on the system
-    for _ in 1...300 {
+    // check if the build is done every second, up to 2 minutes - there will be an image on the system
+    for _ in 1...120 {
         try await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconds
         if try await Docker.images.contains(image) { break }
     }

@@ -26,10 +26,16 @@ enum Version: String {
      - Reduced the timeout for cached builds (forge workaround implemented in version 2.1.0) to 2 minutes to speed up bulk builds.
      */
     case v2_1_1 = "2.1.1"
+    
+    /**
+     - Java versions are determined automatically. New support will be smoother this way.
+     - Updated docker dependency.
+     */
+    case v2_2_0 = "2.2.0"
 }
 
 extension Version {
-    static var current: Self = .v2_1_1
+    static var current: Self = .v2_2_0
 }
 
 extension Version: CustomStringConvertible {

@@ -7,30 +7,34 @@
 
 import Foundation
 
-enum JavaVersion: UInt, CustomStringConvertible {
-    case java7 = 7
-    case java8 = 8
-    case java11 = 11
-    case java16 = 16
-    case java17 = 17
+struct JavaVersion: RawRepresentable, CustomStringConvertible, Equatable {
+    let rawValue: UInt
     
-    /// Name of the java runtime package to be installed
-    var packageName: String {
-        switch self {
-        case .java7:
-            return "openjdk7-jre"
-        case .java8:
-            return "openjdk8-jre"
-        case .java11:
-            return "openjdk11-jre-headless"
-        case .java16:
-            return "openjdk16-jre-headless"
-        case .java17:
-            return "openjdk17-jre-headless"
-        }
+    init(rawValue: UInt) {
+        self.rawValue = rawValue
     }
     
     var description: String { "Java \(rawValue)" }
     
-    static var latest: Self = .java17
+    // Known java versions
+    static let java7 = JavaVersion(rawValue: 7)
+    static let java8 = JavaVersion(rawValue: 8)
+    static let java11 = JavaVersion(rawValue: 11)
+    static let java16 = JavaVersion(rawValue: 16)
+    static let java17 = JavaVersion(rawValue: 17)
+    static let java21 = JavaVersion(rawValue: 21)
+    
+    static var latest: Self = .java21
+    
+    /// Name of the java runtime package to be installed
+    var packageName: String {
+        switch self {
+        case .java7, .java8:
+            // old java package name style
+            return "openjdk\(rawValue)-jre"
+        default:
+            // assume new standard java package name style
+            return "openjdk\(rawValue)-jre-headless"
+        }
+    }
 }

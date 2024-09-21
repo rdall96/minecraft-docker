@@ -32,10 +32,15 @@ enum Version: String {
      - Updated docker dependency.
      */
     case v2_2_0 = "2.2.0"
+    
+    /**
+     - Added support for NeoForged mod loader.
+     */
+    case v2_3_0 = "2.3.0"
 }
 
 extension Version {
-    static var current: Self = .v2_2_0
+    static var current: Self = .v2_3_0
 }
 
 extension Version: CustomStringConvertible {

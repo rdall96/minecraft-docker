@@ -158,6 +158,8 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
             runtimeProvider = FabricRuntimeProvider(session: session)
         case .forge:
             runtimeProvider = ForgeRuntimeProvider(session: session)
+        case .neoForged:
+            runtimeProvider = NeoForgedRuntimeProvider(session: session)
         }
         
         // get the download URL for this minecraft version
@@ -206,7 +208,7 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         // Only do this for forge builds since they are the only ones that hang
         let result: Docker.BuildResult
         switch minecraftType {
-        case .forge:
+        case .forge, .neoForged:
             result = try await buildWithCache(buildPath: buildPath, image: image)
         default:
             result = try await Docker.build(path: buildPath, tag: image)
@@ -250,7 +252,7 @@ fileprivate func generateLatestTag(version: MinecraftVersion, type: MinecraftTyp
     switch type {
     case .vanilla:
         return type.latestTag
-    case .fabric, .forge:
+    case .fabric, .forge, .neoForged:
         return .init("\(version)-\(type.latestTag.name)")
     }
 }

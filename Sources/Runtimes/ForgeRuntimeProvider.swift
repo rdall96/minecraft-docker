@@ -78,7 +78,7 @@ final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
             throw MinecraftDockerError.serverDownload("Received invalid forge versions data")
         }
         guard let forge = ForgeVersion.latestVersion(from: content) else {
-            throw MinecraftDockerError.serverDownload("No version of forge foudn for Minecraft \(minecraftVersion)")
+            throw MinecraftDockerError.serverDownload("No version of forge found for Minecraft \(minecraftVersion)")
         }
         return forge
     }

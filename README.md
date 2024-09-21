@@ -4,6 +4,8 @@ This docker image based on Alpine Linux contains the necessary components to run
 * Vanilla (Java & Bedrock) - [Official site](https://www.minecraft.net/en-us)
 * Forge - [Minecraft Forge](https://files.minecraftforge.net/net/minecraftforge/forge/)
 * Fabric - [Fabric MC](https://fabricmc.net)
+* NeoForge - [NeoForged](https://neoforged.net/)
+* Quilt - _Coming soon_
 
 ## Installation
 

@@ -35,6 +35,7 @@ enum Version: String {
     
     /**
      - Added support for NeoForged mod loader.
+     - Added support for Quilt mod loader (beta).
      */
     case v2_3_0 = "2.3.0"
 }

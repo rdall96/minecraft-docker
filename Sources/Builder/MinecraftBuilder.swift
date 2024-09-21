@@ -156,6 +156,8 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
             runtimeProvider = ForgeRuntimeProvider(session: session)
         case .neoForged:
             runtimeProvider = NeoForgedRuntimeProvider(session: session)
+        case .quilt:
+            runtimeProvider = QuiltRuntimeProvider(session: session)
         }
         
         // get the download URL for this minecraft version
@@ -248,7 +250,7 @@ fileprivate func generateLatestTag(version: MinecraftVersion, type: MinecraftTyp
     switch type {
     case .vanilla:
         return type.latestTag
-    case .fabric, .forge, .neoForged:
+    case .fabric, .forge, .neoForged, .quilt:
         return .init("\(version)-\(type.latestTag.name)")
     }
 }

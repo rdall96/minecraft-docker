@@ -169,6 +169,8 @@ struct BuildCommand: AsyncParsableCommand {
             runtimeProvider = ForgeRuntimeProvider(session: session)
         case .neoForged:
             runtimeProvider = NeoForgedRuntimeProvider(session: session)
+        case .quilt:
+            runtimeProvider = QuiltRuntimeProvider(session: session)
         }
         var versionsToBuild = [MinecraftVersion]()
         var hasLatestImage = false // track if we are going to be be building the latest image, so we can choose to tag it later

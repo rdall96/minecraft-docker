@@ -47,6 +47,7 @@ struct ForgeRuntime: MinecraftRuntime {
     let javaVersion: JavaVersion?
 }
 
+/// https://files.minecraftforge.net/net/minecraftforge/forge/index_1.16.5.html
 final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
     static private func versionsHtmlUrl(minecraft: String) -> URL {
         URL(string: "https://files.minecraftforge.net/net/minecraftforge/forge/index_\(minecraft).html")!

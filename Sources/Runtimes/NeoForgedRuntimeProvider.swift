@@ -41,8 +41,9 @@ struct NeoForgedRuntime: MinecraftRuntime {
     let javaVersion: JavaVersion?
 }
 
+/// https://neoforged.net
 final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
-    private static let versionListURL: URL = URL(string: "https://maven.neoforged.net/releases/net/neoforged/neoforge/")!
+    private static let versionListURL = URL(string: "https://maven.neoforged.net/releases/net/neoforged/neoforge/")!
     
     let session: URLSession
     private let vanillaProvider: VanillaRuntimeProvider
@@ -52,7 +53,7 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
         vanillaProvider = VanillaRuntimeProvider(session: session)
     }
     
-    func installer(for minecraftVersion: MinecraftVersion) async throws -> NeoForgedVersion {
+    private func installer(for minecraftVersion: MinecraftVersion) async throws -> NeoForgedVersion {
         let (data, response) = try await session.data(for: Self.versionListURL)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MinecraftDockerError.serverDownload("Server error when retrieving the neoforged versions")
@@ -99,7 +100,6 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
     
     func runtime(for version: MinecraftVersion) async throws -> any MinecraftRuntime {
         let installer = try await installer(for: version)
-        let url = installer.installerUrl(base: Self.versionListURL)
         return NeoForgedRuntime(
             version: version,
             url: installer.installerUrl(base: Self.versionListURL),

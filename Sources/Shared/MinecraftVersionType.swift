@@ -72,6 +72,7 @@ enum MinecraftType: String, CustomStringConvertible {
     case fabric
     case forge
     case neoForged
+    case quilt
     
     var description: String {
         switch self {
@@ -83,6 +84,8 @@ enum MinecraftType: String, CustomStringConvertible {
             return "Modded Java with the Forge mod loader"
         case .neoForged:
             return "Modded Java with the NeoForged mod loader"
+        case .quilt:
+            return "Modded Java with the Quilt mod loader"
         }
     }
     

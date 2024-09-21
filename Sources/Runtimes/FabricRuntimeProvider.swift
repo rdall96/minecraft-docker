@@ -32,6 +32,7 @@ struct FabricRuntime: MinecraftRuntime {
     let javaVersion: JavaVersion?
 }
 
+/// https://fabricmc.net
 final class FabricRuntimeProvider: MinecraftRuntimeProvider {
     static private func loaderJsonUrl(minecraft: String) -> URL {
         URL(string: "https://meta.fabricmc.net/v2/versions/loader/\(minecraft)")!

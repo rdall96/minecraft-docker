@@ -23,6 +23,8 @@ final class MinecraftDownloader {
             runtimeProvider = ForgeRuntimeProvider(session: session)
         case .neoForged:
             runtimeProvider = NeoForgedRuntimeProvider(session: session)
+        case .quilt:
+            runtimeProvider = QuiltRuntimeProvider(session: session)
         }
     }
     

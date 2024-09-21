@@ -28,6 +28,9 @@ struct VanillaRuntime: MinecraftRuntime {
     let javaVersion: JavaVersion?
 }
 
+/// https://www.minecraft.net/en-us
+/// API: https://wiki.vg/Mojang_API
+/// Alt: https://mcversions.net
 final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
     static private let versionJsonUrl = URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!
     

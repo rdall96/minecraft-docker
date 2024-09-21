@@ -7,10 +7,6 @@
 
 import Foundation
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 protocol MinecraftRuntime {
     /// Type of Minecraft runtime
     var type: MinecraftType { get }

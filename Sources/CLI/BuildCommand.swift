@@ -9,10 +9,6 @@ import Foundation
 import ArgumentParser
 import DockerSwiftAPI
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 struct BuildCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(

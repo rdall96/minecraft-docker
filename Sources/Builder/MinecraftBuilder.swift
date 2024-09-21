@@ -8,10 +8,6 @@
 import Foundation
 import DockerSwiftAPI
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 /// Build a Minecraft docker image
 protocol MinecraftBuilderProtocol {
     var minecraftType: MinecraftType { get }

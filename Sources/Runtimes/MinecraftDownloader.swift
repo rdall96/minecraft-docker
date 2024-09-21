@@ -7,10 +7,6 @@
 
 import Foundation
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 final class MinecraftDownloader {
     
     let session: URLSession

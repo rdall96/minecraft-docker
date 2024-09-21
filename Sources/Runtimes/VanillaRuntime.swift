@@ -7,10 +7,6 @@
 
 import Foundation
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 struct VanillaRuntime: MinecraftRuntime {
     let type: MinecraftType = .vanilla
     let version: MinecraftVersion

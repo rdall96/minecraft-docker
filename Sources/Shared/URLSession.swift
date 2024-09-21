@@ -7,8 +7,11 @@
 
 import Foundation
 
+// On linux the URLSession symbol is not in Foundation but in FoundationNetworking.
+// Import that here if we can, and add a global typealias so we don't need to import it everwhere else
 #if canImport(FoundationNetworking)
 import FoundationNetworking
+typealias URLSession = FoundationNetworking.URLSession
 #endif
 
 // URLSession extension because `.data(from:)` is not available in linux.

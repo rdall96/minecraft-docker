@@ -7,10 +7,6 @@
 
 import Foundation
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 struct FabricRuntime: MinecraftRuntime {
     let type: MinecraftType = .fabric
     let version: MinecraftVersion

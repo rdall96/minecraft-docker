@@ -8,10 +8,6 @@
 import Foundation
 import SwiftSoup
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
 struct ForgeRuntime: MinecraftRuntime {
     let type: MinecraftType = .forge
     let version: MinecraftVersion

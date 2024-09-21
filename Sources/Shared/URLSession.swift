@@ -12,6 +12,7 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 typealias URLSession = FoundationNetworking.URLSession
+typealias HTTPURLResponse = FoundationNetworking.HTTPURLResponse
 #endif
 
 // URLSession extension because `.data(from:)` is not available in linux.

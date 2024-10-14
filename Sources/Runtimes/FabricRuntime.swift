@@ -1,5 +1,5 @@
 //
-//  FabricRuntimeProvider.swift
+//  FabricRuntime.swift
 //
 //
 //  Created by Ricky Dall'Armellina on 8/10/23.

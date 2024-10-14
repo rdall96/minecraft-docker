@@ -23,6 +23,9 @@ struct JavaVersion: RawRepresentable, CustomStringConvertible, Equatable {
     static let java16 = JavaVersion(rawValue: 16)
     static let java17 = JavaVersion(rawValue: 17)
     static let java21 = JavaVersion(rawValue: 21)
+    static let java22 = JavaVersion(rawValue: 22)
+    static let java23 = JavaVersion(rawValue: 23)
+    static let java24 = JavaVersion(rawValue: 24)
     
     static var latest: Self = .java21
     

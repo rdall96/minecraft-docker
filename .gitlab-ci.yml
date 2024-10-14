@@ -104,6 +104,6 @@ minecraft-server:
   rules:
     - if: $MINECRAFT_VERSION == null || $MINECRAFT_VERSION == ""
       when: never
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"
   tags:
     - run

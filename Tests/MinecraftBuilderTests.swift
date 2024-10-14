@@ -46,7 +46,7 @@ final class VanillaBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     }
     
     func testBuildHappyPath() async throws {
-        builder = MinecraftBuilder(minecraftType: .vanilla)
+        builder = MinecraftBuilder(for: .vanilla)
         let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
         builtImages.append(contentsOf: images)
     }
@@ -58,12 +58,22 @@ final class FabricBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     var builtImages: [Docker.Image] = []
     
     override func tearDown() async throws {
-        try await cleanup()
+//        try await cleanup()
     }
     
     func testBuildHappyPath() async throws {
-        builder = MinecraftBuilder(minecraftType: .fabric)
+        builder = MinecraftBuilder(for: .fabric)
         let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
+        builtImages.append(contentsOf: images)
+    }
+    
+    func testBuildCustomVersion() async throws {
+        builder = MinecraftBuilder(for: .fabric)
+        let images = try await build(
+            minecraftVersion: .init(minecraft: "1.21", modLoader: "0.15.7"),
+            imageName: "minecraft",
+            tagLatest: false
+        )
         builtImages.append(contentsOf: images)
     }
 }

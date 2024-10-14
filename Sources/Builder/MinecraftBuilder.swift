@@ -22,7 +22,7 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
     
     let minecraftType: GameType
     
-    init(minecraftType: GameType) {
+    init(for minecraftType: GameType) {
         self.minecraftType = minecraftType
     }
     

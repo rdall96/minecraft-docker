@@ -155,7 +155,7 @@ struct BuildCommand: AsyncParsableCommand {
         }
         
         // create a builder
-        let builder = MinecraftBuilder(minecraftType: minecraft.type)
+        let builder = MinecraftBuilder(for: minecraft.type)
         
         // if "all" is specified as the version, we need to cache all the versions to build and call them in succession
         let session = URLSession(configuration: .default)

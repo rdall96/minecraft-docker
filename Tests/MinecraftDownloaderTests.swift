@@ -64,6 +64,17 @@ final class FabricDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
         )
     }
     
+    func testDownloadCustomVersion() async throws {
+        let tempPath = FileManager.default.temporaryDirectory
+        let jarPath = try await downloader.download(
+            version: .init(minecraft: "1.20.1", modLoader: "0.14.1"),
+            to: tempPath
+        )
+        XCTAssert(
+            FileManager.default.fileExists(atPath: jarPath.path)
+        )
+    }
+    
     func testDownloadInvalidVersion() async throws {
         let tempPath = FileManager.default.temporaryDirectory
         do {

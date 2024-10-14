@@ -143,14 +143,14 @@ final class FabricRuntimeProvider: MinecraftRuntimeProvider {
         let loader: FabricLoader
         if let modLoaderVersion = version.modLoader {
             // allow unstable versions when the mod loader version is specified
-            let requestLoader = try await fabricLoaders(for: version.minecraft, allowUnstable: true).first {
+            let requestedLoader = try await fabricLoaders(for: version.minecraft, allowUnstable: true).first {
                 $0.loader.version == modLoaderVersion
             }
-            guard let requestLoader else {
-                MinecraftDockerLog.error("The requested fabric loader \(modLoaderVersion) is not available for Minecraft \(version.minecraft)")
+            guard let requestedLoader else {
+                MinecraftDockerLog.error("The requested fabric version \(modLoaderVersion) is not available for Minecraft \(version.minecraft)")
                 throw MinecraftDockerError.invalidGameVersion
             }
-            loader = requestLoader
+            loader = requestedLoader
         }
         else {
             loader = try await latestFabricLoader(for: version.minecraft)

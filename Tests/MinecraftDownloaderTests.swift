@@ -107,6 +107,17 @@ final class ForgeDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
         )
     }
     
+    func testDownloadCustomVersion() async throws {
+        let tempPath = FileManager.default.temporaryDirectory
+        let jarPath = try await downloader.download(
+            version: .init(minecraft: "1.12.2", modLoader: "14.23.5.2836"),
+            to: tempPath
+        )
+        XCTAssert(
+            FileManager.default.fileExists(atPath: jarPath.path)
+        )
+    }
+    
     func testDownloadInvalidVersion() async throws {
         let tempPath = FileManager.default.temporaryDirectory
         do {

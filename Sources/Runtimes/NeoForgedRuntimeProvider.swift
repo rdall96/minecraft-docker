@@ -9,8 +9,8 @@ import Foundation
 import SwiftSoup
 
 struct NeoForgedRuntime: MinecraftRuntime {
-    let type: MinecraftType = .neoForged
-    let version: MinecraftVersion
+    let type: GameType = .neoForged
+    let version: GameVersion
     let url: URL
     let name: String
     
@@ -53,7 +53,7 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
         vanillaProvider = VanillaRuntimeProvider(session: session)
     }
     
-    private func installer(for minecraftVersion: MinecraftVersion) async throws -> NeoForgedVersion {
+    private func installer(for minecraftVersion: GameVersion) async throws -> NeoForgedVersion {
         let (data, response) = try await session.data(for: Self.versionListURL)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MinecraftDockerError.serverDownload("Server error when retrieving the neoforged versions")
@@ -70,12 +70,12 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
         return neoForged
     }
     
-    var availableVersions: [MinecraftVersion] {
+    var availableVersions: [GameVersion] {
         get async throws {
             let vanillaVersions = try await vanillaProvider.availableVersions
             return await withTaskGroup(
-                of: MinecraftVersion?.self,
-                returning: [MinecraftVersion].self
+                of: GameVersion?.self,
+                returning: [GameVersion].self
             ) { group in
                 for vanillaVersion in vanillaVersions {
                     group.addTask {
@@ -89,7 +89,7 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
                         }
                     }
                 }
-                var versions = [MinecraftVersion]()
+                var versions = [GameVersion]()
                 for await result in group.compactMap({ $0 }) {
                     versions.append(result)
                 }
@@ -98,12 +98,12 @@ final class NeoForgedRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    func runtime(for version: MinecraftVersion) async throws -> any MinecraftRuntime {
+    func runtime(for version: GameVersion) async throws -> any MinecraftRuntime {
         let installer = try await installer(for: version)
         return NeoForgedRuntime(
             version: version,
             url: installer.installerUrl(base: Self.versionListURL),
-            name: "\(version.rawValue)-\(MinecraftType.neoForged.rawValue)_\(installer.version)",
+            name: "\(version.minecraft)-\(GameType.neoForged.rawValue)_\(installer.version)",
             javaVersion: .init(rawValue: try await vanillaProvider.info(for: version).javaVersion)
         )
     }
@@ -126,11 +126,11 @@ struct NeoForgedVersion {
     }
     
     /// Find the best NeoForged version from the given HTML page
-    static func latestVersion(from html: String, for minecraftVersion: MinecraftVersion) -> NeoForgedVersion? {
+    static func latestVersion(from html: String, for minecraftVersion: GameVersion) -> NeoForgedVersion? {
         // NeoForged versions major version is the Minecraft minor version
         // i.e.: NeoForged 20.2.3  -> Minecraft 1.20.2
         //       NeoForged 21.2.57 -> Minecraft 1.21.1
-        let minecraftVersionString = minecraftVersion.components
+        let minecraftVersionString = minecraftVersion.minecraftVersionComponents
             .dropFirst()
             .compactMap { String($0) }
             .joined(separator: ".")

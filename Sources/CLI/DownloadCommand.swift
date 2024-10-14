@@ -16,7 +16,7 @@ struct DownloadCommand: AsyncParsableCommand {
     )
     
     @OptionGroup
-    var minecraft: MinecraftVersionOptions
+    var minecraft: GameVersionOptions
     
     @Flag(name: .shortAndLong, help: "Only list out the available server versions for the given minecraft server type.")
     var list: Bool = false
@@ -32,7 +32,7 @@ struct DownloadCommand: AsyncParsableCommand {
     }
     
     func run() async {
-        let downloader = MinecraftDownloader(type: minecraft.type)
+        let downloader = MinecraftDownloader(for: minecraft.type)
         
         // list the versions and quit if specified
         if list {
@@ -45,8 +45,8 @@ struct DownloadCommand: AsyncParsableCommand {
                     return
                 }
                 // add the latest tag to the first version
-                versions[0] = .init(versions[0].rawValue + " (latest)")
-                let versionsList = versions.map({ $0.rawValue }).joined(separator: ", ")
+                versions[0] = .init(minecraft: versions[0].description + " (latest)")
+                let versionsList = versions.map({ $0.description }).joined(separator: ", ")
                 MinecraftDockerLog.log("Available Minecraft versions for \(minecraft.type): \(versionsList)")
             }
             catch {

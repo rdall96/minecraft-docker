@@ -10,19 +10,19 @@ import DockerSwiftAPI
 
 /// Build a Minecraft docker image
 protocol MinecraftBuilderProtocol {
-    var minecraftType: MinecraftType { get }
+    var minecraftType: GameType { get }
     
     func generateDockerFile(systemPackages: [String], installCommands: [String], volumes: [String]) -> String
     func generateStartupScript(serverProperties: [String], command: String) -> String
     
-    func build(minecraftVersion: MinecraftVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
 }
 
 final class MinecraftBuilder: MinecraftBuilderProtocol {
     
-    let minecraftType: MinecraftType
+    let minecraftType: GameType
     
-    init(minecraftType: MinecraftType) {
+    init(minecraftType: GameType) {
         self.minecraftType = minecraftType
     }
     
@@ -129,7 +129,7 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         """
     }
     
-    func build(minecraftVersion: MinecraftVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
         let buildPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("minecraft_build")
             .appendingPathComponent("\(minecraftType.rawValue)_\(minecraftVersion)")
@@ -246,7 +246,7 @@ extension Docker.Image {
     }
 }
 
-fileprivate func generateLatestTag(version: MinecraftVersion, type: MinecraftType) -> Docker.Tag {
+fileprivate func generateLatestTag(version: GameVersion, type: GameType) -> Docker.Tag {
     switch type {
     case .vanilla:
         return type.latestTag

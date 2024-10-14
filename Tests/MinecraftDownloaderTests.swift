@@ -17,7 +17,7 @@ protocol MinecraftDownloaderTestCase: XCTestCase {
 
 // MARK: - Vanilla downloader
 final class VanillaDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
-    let downloader: MinecraftDownloader = MinecraftDownloader(type: .vanilla)
+    let downloader: MinecraftDownloader = MinecraftDownloader(for: .vanilla)
     
     func testAvailableVersions() async throws {
         let versions = try await downloader.runtimeProvider.availableVersions
@@ -26,7 +26,7 @@ final class VanillaDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     
     func testDownloadVersionHappyPath() async throws {
         let tempPath = FileManager.default.temporaryDirectory
-        let jarPath = try await downloader.download(version: .init("1.20.1"), to: tempPath)
+        let jarPath = try await downloader.download(version: .init(minecraft: "1.20.1"), to: tempPath)
         XCTAssert(
             FileManager.default.fileExists(atPath: jarPath.path)
         )
@@ -35,7 +35,7 @@ final class VanillaDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     func testDownloadInvalidVersion() async throws {
         let tempPath = FileManager.default.temporaryDirectory
         do {
-            try await downloader.download(version: .init("def_not_a_minecraft_version"), to: tempPath)
+            try await downloader.download(version: .init(minecraft: "def_not_a_minecraft_version"), to: tempPath)
             XCTFail("This is supposed to fail")
         }
         catch is MinecraftDockerError {
@@ -49,7 +49,7 @@ final class VanillaDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
 
 // MARK: - Fabric downloader
 final class FabricDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
-    let downloader: MinecraftDownloader = MinecraftDownloader(type: .fabric)
+    let downloader: MinecraftDownloader = MinecraftDownloader(for: .fabric)
     
     func testAvailableVersions() async throws {
         let versions = try await downloader.runtimeProvider.availableVersions
@@ -58,7 +58,7 @@ final class FabricDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     
     func testDownloadVersionHappyPath() async throws {
         let tempPath = FileManager.default.temporaryDirectory
-        let jarPath = try await downloader.download(version: .init("1.20.1"), to: tempPath)
+        let jarPath = try await downloader.download(version: .init(minecraft: "1.20.1"), to: tempPath)
         XCTAssert(
             FileManager.default.fileExists(atPath: jarPath.path)
         )
@@ -67,7 +67,7 @@ final class FabricDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     func testDownloadInvalidVersion() async throws {
         let tempPath = FileManager.default.temporaryDirectory
         do {
-            try await downloader.download(version: .init("def_not_a_minecraft_version"), to: tempPath)
+            try await downloader.download(version: .init(minecraft: "def_not_a_minecraft_version"), to: tempPath)
             XCTFail("This is supposed to fail")
         }
         catch is MinecraftDockerError {
@@ -81,7 +81,7 @@ final class FabricDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
 
 // MARK: - Forge downloader
 final class ForgeDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
-    let downloader: MinecraftDownloader = MinecraftDownloader(type: .forge)
+    let downloader: MinecraftDownloader = MinecraftDownloader(for: .forge)
     
     func testAvailableVersions() async throws {
         let versions = try await downloader.runtimeProvider.availableVersions
@@ -90,7 +90,7 @@ final class ForgeDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     
     func testDownloadVersionHappyPath() async throws {
         let tempPath = FileManager.default.temporaryDirectory
-        let jarPath = try await downloader.download(version: .init("1.20.1"), to: tempPath)
+        let jarPath = try await downloader.download(version: .init(minecraft: "1.20.1"), to: tempPath)
         XCTAssert(
             FileManager.default.fileExists(atPath: jarPath.path)
         )
@@ -99,7 +99,7 @@ final class ForgeDownloaderTests: XCTestCase, MinecraftDownloaderTestCase {
     func testDownloadInvalidVersion() async throws {
         let tempPath = FileManager.default.temporaryDirectory
         do {
-            try await downloader.download(version: .init("def_not_a_minecraft_version"), to: tempPath)
+            try await downloader.download(version: .init(minecraft: "def_not_a_minecraft_version"), to: tempPath)
             XCTFail("This is supposed to fail")
         }
         catch is MinecraftDockerError {

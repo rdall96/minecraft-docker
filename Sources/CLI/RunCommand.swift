@@ -20,7 +20,7 @@ struct RunCommand: AsyncParsableCommand {
     var name: String? = nil
     
     @OptionGroup
-    var minecraft: MinecraftVersionOptions
+    var minecraft: GameVersionOptions
     
     @Option(name: .shortAndLong, help: "Location where to store the Minecraft world data and other persistent files.")
     var path: String
@@ -110,7 +110,7 @@ struct RunCommand: AsyncParsableCommand {
 }
 
 extension Docker.Image {
-    fileprivate static func minecraftServerImage(version: MinecraftVersion) -> Self {
+    fileprivate static func minecraftServerImage(version: GameVersion) -> Self {
         .init(repository: "rdall96", name: "minecraft-server", tag: .init(version.description))
     }
 }

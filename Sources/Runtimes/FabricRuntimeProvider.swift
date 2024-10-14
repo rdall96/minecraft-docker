@@ -8,8 +8,8 @@
 import Foundation
 
 struct FabricRuntime: MinecraftRuntime {
-    let type: MinecraftType = .fabric
-    let version: MinecraftVersion
+    let type: GameType = .fabric
+    let version: GameVersion
     let url: URL
     let name: String
     
@@ -50,8 +50,8 @@ final class FabricRuntimeProvider: MinecraftRuntimeProvider {
         vanillaProvider = VanillaRuntimeProvider(session: session)
     }
     
-    private func latestFabricLoader(for minecraftVersion: MinecraftVersion, allowUnstable: Bool = false) async throws -> FabricLoader {
-        let (data, response) = try await session.data(for: Self.loaderJsonUrl(minecraft: minecraftVersion.rawValue))
+    private func fabricLoaders(for minecraftVersion: String, allowUnstable: Bool) async throws -> [FabricLoader] {
+        let (data, response) = try await session.data(for: Self.loaderJsonUrl(minecraft: minecraftVersion))
         // Ensure we get a valid response
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MinecraftDockerError.serverDownload("Server error when retrieving the fabric loader versions")
@@ -62,21 +62,27 @@ final class FabricRuntimeProvider: MinecraftRuntimeProvider {
         }
         // parse the response data and cache the versions manifest
         do {
-            let loaders = try JSONDecoder().decode([FabricLoader].self, from: data)
-            let loader = loaders.first {
-                if allowUnstable { return true }
-                return $0.loader.stable && $0.intermediary.stable
-            }
-            guard let loader else {
-                throw MinecraftDockerError.serverDownload("No valid Fabric loaders found")
-            }
-            return loader
+            return try JSONDecoder().decode([FabricLoader].self, from: data)
+                .filter {
+                    // don't retain beta builds, and check for stable versions
+                    let isStable = $0.loader.stable && $0.intermediary.stable
+                    return !$0.loader.version.contains("+") && (isStable || allowUnstable)
+                }
         }
         catch {
             throw MinecraftDockerError.serverDownload("Invalid fabric loaders data: \(error)")
         }
     }
     
+    private func latestFabricLoader(for minecraftVersion: String, allowUnstable: Bool = false) async throws -> FabricLoader {
+        let loader = try await fabricLoaders(for: minecraftVersion, allowUnstable: allowUnstable).first
+        guard let loader else {
+            throw MinecraftDockerError.serverDownload("No valid Fabric loaders found")
+        }
+        return loader
+    }
+    
+    // The latest installer can be used for any versions of the loader, so we only care about the newest most stable version
     private func latestInstaller(allowUnstable: Bool = false) async throws -> FabricInstaller {
         let (data, response) = try await session.data(for: Self.installerJsonUrl)
         // Ensure we get a valid response
@@ -101,49 +107,59 @@ final class FabricRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    var availableVersions: [MinecraftVersion] {
+    var availableVersions: [GameVersion] {
         get async throws {
             let vanillaVersions = try await vanillaProvider.availableVersions
             // the fabric versions will be limited the loaders provided, so we need to fetch the loaders for each version
-            // (thankfully thread pools are a thing)
             return await withTaskGroup(
-                of: MinecraftVersion?.self,
-                returning: [MinecraftVersion].self
+                of: [GameVersion].self,
+                returning: [GameVersion].self
             ) { group in
-                for vanillaVersion in vanillaVersions {
+                for version in vanillaVersions {
                     group.addTask {
                         do {
-                            _ = try await self.latestFabricLoader(for: vanillaVersion)
-                            return vanillaVersion
+                            // fetch all versions, including the unstable ones
+                            return try await self.fabricLoaders(for: version.minecraft, allowUnstable: true)
+                                .compactMap { GameVersion(minecraft: version.minecraft, modLoader: $0.loader.version) }
                         }
                         catch {
                             // Keep this commented out as it can be spammy, it's useful for debugging though
 //                            MinecraftDockerLog.warning("No fabric version found for Minecraft \(vanillaVersion), ignoring...")
-                            return nil
+                            return []
                         }
                     }
                 }
-                var versions = [MinecraftVersion]()
-                for await result in group.compactMap({ $0 }) {
-                    versions.append(result)
+                var versions: [GameVersion] = []
+                for await result in group {
+                    versions.append(contentsOf: result)
                 }
                 return versions
             }
         }
     }
     
-    func runtime(for version: MinecraftVersion) async throws -> MinecraftRuntime {
-        // ensure the minecraft version is valid
-        guard try await availableVersions.contains(version) else {
-            throw MinecraftDockerError.invalidMinecraftVersion
-        }
+    func runtime(for version: GameVersion) async throws -> MinecraftRuntime {
         // get the loader
-        let loader = try await latestFabricLoader(for: version)
+        let loader: FabricLoader
+        if let modLoaderVersion = version.modLoader {
+            // allow unstable versions when the mod loader version is specified
+            let requestLoader = try await fabricLoaders(for: version.minecraft, allowUnstable: true).first {
+                $0.loader.version == modLoaderVersion
+            }
+            guard let requestLoader else {
+                MinecraftDockerLog.error("The requested fabric loader \(modLoaderVersion) is not available for Minecraft \(version.minecraft)")
+                throw MinecraftDockerError.invalidGameVersion
+            }
+            loader = requestLoader
+        }
+        else {
+            loader = try await latestFabricLoader(for: version.minecraft)
+        }
         // get the installer
         let installer = try await latestInstaller()
         // assemble url
         let url = Self.jarDownloadUrl(
-            minecraft: version.rawValue,
+            minecraft: version.minecraft,
             loader: loader.loader.version,
             installer: installer.version
         )
@@ -151,7 +167,7 @@ final class FabricRuntimeProvider: MinecraftRuntimeProvider {
         return FabricRuntime(
             version: version,
             url: url,
-            name: "\(version.rawValue)-\(MinecraftType.fabric.rawValue)_\(loader.loader.version)",
+            name: "\(version.minecraft)-\(GameType.fabric.rawValue)_\(loader.loader.version)",
             javaVersion: .init(rawValue: try await vanillaProvider.info(for: version).javaVersion)
         )
     }

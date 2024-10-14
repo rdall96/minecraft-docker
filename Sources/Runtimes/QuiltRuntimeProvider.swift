@@ -9,8 +9,8 @@ import Foundation
 import SwiftSoup
 
 struct QuiltRuntime: MinecraftRuntime {
-    let type: MinecraftType = .quilt
-    let version: MinecraftVersion
+    let type: GameType = .quilt
+    let version: GameVersion
     let url: URL
     let name: String
     
@@ -73,19 +73,19 @@ final class QuiltRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    var availableVersions: [MinecraftVersion] {
+    var availableVersions: [GameVersion] {
         get async throws {
             // Quilt only has one universal installer, so the supported versions are the same as Vanilla?
             try await vanillaProvider.availableVersions
         }
     }
     
-    func runtime(for version: MinecraftVersion) async throws -> any MinecraftRuntime {
+    func runtime(for version: GameVersion) async throws -> any MinecraftRuntime {
         let installer = try await latestInstaller
         return QuiltRuntime(
             version: version,
             url: installer.installerUrl(base: Self.versionListURL),
-            name: "\(version.rawValue)-\(MinecraftType.quilt.rawValue)_\(installer.version)",
+            name: "\(version.minecraft)-\(GameType.quilt.rawValue)_\(installer.version)",
             javaVersion: .init(rawValue: try await vanillaProvider.info(for: version).javaVersion)
         )
     }

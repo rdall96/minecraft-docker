@@ -13,13 +13,13 @@ protocol MinecraftBuilderTestCase: XCTestCase {
     var builder: MinecraftBuilder! { get }
     var builtImages: [Docker.Image] { get set }
     
-    func build(minecraftVersion: MinecraftVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
     func cleanup() async throws
 }
 
 extension MinecraftBuilderTestCase {
     
-    func build(minecraftVersion: MinecraftVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
         let images = try await builder.build(
             minecraftVersion: minecraftVersion,
             imageName: imageName,
@@ -47,7 +47,7 @@ final class VanillaBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     
     func testBuildHappyPath() async throws {
         builder = MinecraftBuilder(minecraftType: .vanilla)
-        let images = try await build(minecraftVersion: .init("1.20.1"), imageName: "minecraft", tagLatest: false)
+        let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
         builtImages.append(contentsOf: images)
     }
 }
@@ -63,7 +63,7 @@ final class FabricBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     
     func testBuildHappyPath() async throws {
         builder = MinecraftBuilder(minecraftType: .fabric)
-        let images = try await build(minecraftVersion: .init("1.20.1"), imageName: "minecraft", tagLatest: false)
+        let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
         builtImages.append(contentsOf: images)
     }
 }

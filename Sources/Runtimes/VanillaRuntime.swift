@@ -8,8 +8,8 @@
 import Foundation
 
 struct VanillaRuntime: MinecraftRuntime {
-    let type: MinecraftType = .vanilla
-    let version: MinecraftVersion
+    let type: GameType = .vanilla
+    let version: GameVersion
     let url: URL
     let name: String
     
@@ -63,7 +63,7 @@ final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    var availableVersions: [MinecraftVersion] {
+    var availableVersions: [GameVersion] {
         get async throws {
             // make sure we have version data
             if versionsManifest == nil {
@@ -72,20 +72,20 @@ final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
             // we only want to return `release` versions, and keep the order
             return versionsManifest?.versions.lazy
                 .filter { $0.type == .release }
-                .compactMap { .init($0.id) } ?? []
+                .compactMap { .init(minecraft: $0.id) } ?? []
         }
     }
     
-    func info(for version: MinecraftVersion) async throws -> VanillaVersionInfo {
+    func info(for version: GameVersion) async throws -> VanillaVersionInfo {
         // make sure we have version data
         if versionsManifest == nil {
             try await cacheAvailableVersions()
         }
         // make sure we have a download url for this version info
         let versionInfoUrl = versionsManifest?.versions
-            .first(where: { $0.id == version.rawValue })?.url
+            .first(where: { $0.id == version.minecraft })?.url
         guard let versionInfoUrl else {
-            throw MinecraftDockerError.invalidMinecraftVersion
+            throw MinecraftDockerError.invalidGameVersion
         }
         
         // download the version info
@@ -108,7 +108,7 @@ final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    func runtime(for version: MinecraftVersion) async throws -> MinecraftRuntime {
+    func runtime(for version: GameVersion) async throws -> MinecraftRuntime {
         let versionInfo = try await info(for: version)
         
         guard let serverDownloadUrl = versionInfo.downloads[.server]?.url else {
@@ -117,7 +117,7 @@ final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
         return VanillaRuntime(
             version: version,
             url: serverDownloadUrl,
-            name: version.rawValue,
+            name: version.minecraft,
             javaVersion: .init(rawValue: versionInfo.javaVersion)
         )
     }

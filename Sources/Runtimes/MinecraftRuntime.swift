@@ -9,9 +9,9 @@ import Foundation
 
 protocol MinecraftRuntime {
     /// Type of Minecraft runtime
-    var type: MinecraftType { get }
+    var type: GameType { get }
     /// Minecraft version
-    var version: MinecraftVersion { get }
+    var version: GameVersion { get }
     /// URL to download this runtime
     var url: URL { get }
     /// A name representation of this version
@@ -35,17 +35,17 @@ protocol MinecraftRuntimeProvider {
     var session: URLSession { get }
     
     /// List all the available game version for this type of Miencraft
-    var availableVersions: [MinecraftVersion] { get async throws }
+    var availableVersions: [GameVersion] { get async throws }
     
     /// Get the latest version available
-    var latestVersion: MinecraftVersion { get async throws }
+    var latestVersion: GameVersion { get async throws }
     
     /// Get the download URL for this server version
-    func runtime(for version: MinecraftVersion) async throws -> MinecraftRuntime
+    func runtime(for version: GameVersion) async throws -> MinecraftRuntime
 }
 
 extension MinecraftRuntimeProvider {
-    var latestVersion: MinecraftVersion {
+    var latestVersion: GameVersion {
         get async throws {
             let versions = try await availableVersions.sorted(by: >)
             guard let latest = versions.first else {

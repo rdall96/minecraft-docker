@@ -9,8 +9,8 @@ import Foundation
 import SwiftSoup
 
 struct ForgeRuntime: MinecraftRuntime {
-    let type: MinecraftType = .forge
-    let version: MinecraftVersion
+    let type: GameType = .forge
+    let version: GameVersion
     let url: URL
     let name: String
     
@@ -61,8 +61,8 @@ final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
         vanillaProvider = VanillaRuntimeProvider(session: session)
     }
     
-    func installer(for minecraftVersion: MinecraftVersion) async throws -> ForgeVersion {
-        let (data, response) = try await session.data(for: Self.versionsHtmlUrl(minecraft: minecraftVersion.rawValue))
+    func installer(for minecraftVersion: GameVersion) async throws -> ForgeVersion {
+        let (data, response) = try await session.data(for: Self.versionsHtmlUrl(minecraft: minecraftVersion.minecraft))
         // Ensure we get a valid response
         guard let httpResponse = response as? HTTPURLResponse else {
             throw MinecraftDockerError.serverDownload("Server error when retrieving the forge versions")
@@ -80,14 +80,14 @@ final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
         return forge
     }
     
-    var availableVersions: [MinecraftVersion] {
+    var availableVersions: [GameVersion] {
         get async throws {
             let vanillaVersions = try await vanillaProvider.availableVersions
             // the forge versions will be limited the loaders provided, so we need to fetch the loaders for each version
             // (thankfully thread pools are a thing)
             return await withTaskGroup(
-                of: MinecraftVersion?.self,
-                returning: [MinecraftVersion].self
+                of: GameVersion?.self,
+                returning: [GameVersion].self
             ) { group in
                 for vanillaVersion in vanillaVersions {
                     group.addTask {
@@ -102,7 +102,7 @@ final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
                         }
                     }
                 }
-                var versions = [MinecraftVersion]()
+                var versions = [GameVersion]()
                 for await result in group.compactMap({ $0 }) {
                     versions.append(result)
                 }
@@ -111,12 +111,12 @@ final class ForgeRuntimeProvider: MinecraftRuntimeProvider {
         }
     }
     
-    func runtime(for version: MinecraftVersion) async throws -> MinecraftRuntime {
+    func runtime(for version: GameVersion) async throws -> MinecraftRuntime {
         let installer = try await installer(for: version)
         return ForgeRuntime(
             version: version,
             url: installer.url,
-            name: "\(version.rawValue)-\(MinecraftType.forge.rawValue)_\(installer.version)",
+            name: "\(version.minecraft)-\(GameType.forge.rawValue)_\(installer.version)",
             javaVersion: .init(rawValue: try await vanillaProvider.info(for: version).javaVersion)
         )
     }

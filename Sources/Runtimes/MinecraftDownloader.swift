@@ -12,7 +12,7 @@ final class MinecraftDownloader {
     let session: URLSession
     let runtimeProvider: MinecraftRuntimeProvider
     
-    init(type: MinecraftType, session: URLSession = URLSession(configuration: .default)) {
+    init(for type: GameType, session: URLSession = URLSession(configuration: .default)) {
         self.session = session
         switch type {
         case .vanilla:
@@ -30,7 +30,7 @@ final class MinecraftDownloader {
     
     /// Download a specific Minecraft version to the provided path, and return the full path to the downloaded file
     @discardableResult
-    func download(version: MinecraftVersion, to path: URL) async throws -> URL {
+    func download(version: GameVersion, to path: URL) async throws -> URL {
         let runtime = try await runtimeProvider.runtime(for: version)
         let (downloadPath, serverDownloadResponse) = try await session.download(from: runtime.url)
         guard let httpResponse = serverDownloadResponse as? HTTPURLResponse else {

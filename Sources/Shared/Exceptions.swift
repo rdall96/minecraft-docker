@@ -10,7 +10,7 @@ import DockerSwiftAPI
 
 enum MinecraftDockerError: Error {
     case serverDownload(String?)
-    case invalidMinecraftVersion
+    case invalidGameVersion
     case dockerError(DockerError?)
     case buildError(String)
     case remoteTagExists

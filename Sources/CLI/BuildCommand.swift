@@ -20,7 +20,7 @@ struct BuildCommand: AsyncParsableCommand {
     var name: String = "rdall96/minecraft-server"
     
     @OptionGroup
-    var minecraft: MinecraftVersionOptions
+    var minecraft: GameVersionOptions
     
     @OptionGroup
     var registry: RegistryOptions
@@ -108,7 +108,7 @@ struct BuildCommand: AsyncParsableCommand {
         return removedCount
     }
     
-    private func build(version: MinecraftVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> [Docker.Image] {
+    private func build(version: GameVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> [Docker.Image] {
         MinecraftDockerLog.info("Building version \(version) ...")
         do {
             var images = [Docker.Image]()
@@ -172,7 +172,7 @@ struct BuildCommand: AsyncParsableCommand {
         case .quilt:
             runtimeProvider = QuiltRuntimeProvider(session: session)
         }
-        var versionsToBuild = [MinecraftVersion]()
+        var versionsToBuild = [GameVersion]()
         var hasLatestImage = false // track if we are going to be be building the latest image, so we can choose to tag it later
         if minecraft.version == .all {
             versionsToBuild = (try? await runtimeProvider.availableVersions) ?? []
@@ -191,7 +191,7 @@ struct BuildCommand: AsyncParsableCommand {
         }
         if versionsToBuild.isEmpty {
             MinecraftDockerLog.error("No versions to build provided!")
-            throw MinecraftDockerError.invalidMinecraftVersion
+            throw MinecraftDockerError.invalidGameVersion
         }
         
         // build the images

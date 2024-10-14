@@ -38,10 +38,17 @@ enum Version: String {
      - Added support for Quilt mod loader (beta).
      */
     case v2_3_0 = "2.3.0"
+    
+    /**
+     - Ability to specify the mod loader version when building modded images.
+     - Added `max-tick-time` and `max-world-size` to the server properties.
+     - Added support for builds requiring java 22, 23, and 24.
+     */
+    case v2_4_0 = "2.4.0"
 }
 
 extension Version {
-    static var current: Self = .v2_3_0
+    static var current: Self = .v2_4_0
 }
 
 extension Version: CustomStringConvertible {

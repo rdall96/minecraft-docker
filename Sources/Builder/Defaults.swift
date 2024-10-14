@@ -35,6 +35,8 @@ enum MinecraftRuntimeDefaults {
         "level-seed",
         "level-type",
         "max-players",
+        "max-tick-time",
+        "max-world-size",
         "motd",
         "online-mode",
         "op-permission-level",

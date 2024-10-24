@@ -109,15 +109,20 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
             ln -sf "\(MinecraftRuntimeDefaults.configurationsDirectory)/$file_name" "\(MinecraftRuntimeDefaults.homeDirectory)/$file_name"
         done
         # Create the persistent server configuration file (if they don't exist already)
-            for file_name in "${CONFIG_FILES[@]}"; do
+        for file_name in "${CONFIG_FILES[@]}"; do
             if [[ ! -e "\(MinecraftRuntimeDefaults.configurationsDirectory)/$file_name" ]]; then
                 echo "[]" > "\(MinecraftRuntimeDefaults.configurationsDirectory)/$file_name"
             fi
             # Create symlinks to the server persistent configurations
             ln -sf "\(MinecraftRuntimeDefaults.configurationsDirectory)/$file_name" "\(MinecraftRuntimeDefaults.homeDirectory)/$file_name"
         done
+        
+        # Extra JVM args users can specify
+        touch "\(MinecraftRuntimeDefaults.configurationsDirectory)/jvm_args.txt"
+        ln -sf "\(MinecraftRuntimeDefaults.configurationsDirectory)/jvm_args.txt" "\(MinecraftRuntimeDefaults.homeDirectory)/user_jvm_args.txt"
+        
         # Add a guide to what these configuration files are for
-        echo -e '# Minecraft server configuration files\\n\\nText files (.txt) are for legacy versions (prior to 1.8), any new version of Minecraft will use the JSON format.\\nIf your server is running Minecraft 1.8 or newer, you can delete the old (txt) files.' > \(MinecraftRuntimeDefaults.configurationsDirectory)/README.txt
+        echo -e '# Minecraft server configuration files\\n\\nText files (.txt) are for legacy versions (prior to 1.8), any new version of Minecraft will use the JSON format.\\nIf your server is running Minecraft 1.8 or newer, you can delete the old (txt) files.\n\nYou can add custom JVM arguments to the jvm_args.txt file to further customize the Java runtime for your server. Add `-XX:+PrintFlagsFinal` at the top of the jvm_args.txt file to print all JVM options at runtime before starting the Minecraft server.' > \(MinecraftRuntimeDefaults.configurationsDirectory)/README.txt
         
         # Display current server.properties
         echo -e '\\nServer properties:'

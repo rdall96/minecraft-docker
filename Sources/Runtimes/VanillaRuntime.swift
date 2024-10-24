@@ -19,7 +19,7 @@ struct VanillaRuntime: MinecraftRuntime {
         ["ADD \"\(url.absoluteString)\" \(MinecraftRuntimeDefaults.homeDirectory)/\(executableName)"]
     }
     
-    var startCommand: String { "java -jar \(executableName)" }
+    var startCommand: String { "java $(cat user_jvm_args.txt) -jar \(executableName)" }
     
     var mappedVolumes: [String] {
         MinecraftRuntimeDefaults.mappedVolumes

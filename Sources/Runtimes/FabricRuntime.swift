@@ -21,7 +21,7 @@ struct FabricRuntime: MinecraftRuntime {
         ["ADD \"\(url.absoluteString)\" \(MinecraftRuntimeDefaults.homeDirectory)/\(executableName)"]
     }
     
-    var startCommand: String { "java -jar \(executableName) nogui" }
+    var startCommand: String { "java $(cat user_jvm_args.txt) -jar \(executableName) nogui" }
     
     var mappedVolumes: [String] {
         var volumes = MinecraftRuntimeDefaults.mappedVolumes

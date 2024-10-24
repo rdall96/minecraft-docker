@@ -45,6 +45,11 @@ enum Version: String {
      - Added support for builds requiring java 22, 23, and 24.
      */
     case v2_4_0 = "2.4.0"
+    
+    /**
+     - Users can specify custom JVM arguments in the jvm_args.txt file.
+     */
+    case v2_5_0 = "2.5.0"
 }
 
 extension Version {

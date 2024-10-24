@@ -33,7 +33,7 @@ struct ForgeRuntime: MinecraftRuntime {
         if [[ -e "run.sh" ]]; then
             bash run.sh --nogui
         else
-            java -jar forge*.jar --nogui
+            java $(cat user_jvm_args.txt) -jar forge*.jar --nogui
         fi
         """
     }

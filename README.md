@@ -1,7 +1,7 @@
 # Minecraft Server - Docker
 
 This docker image based on Alpine Linux contains the necessary components to run a Minecraft server. The project supports the following Minecraft versions:
-* Vanilla (Java & Bedrock) - [Official site](https://www.minecraft.net/en-us)
+* Vanilla (Java) - [Official site](https://www.minecraft.net/en-us)
 * Forge - [Minecraft Forge](https://files.minecraftforge.net/net/minecraftforge/forge/)
 * Fabric - [Fabric MC](https://fabricmc.net)
 * NeoForge - [NeoForged](https://neoforged.net/)
@@ -111,6 +111,11 @@ docker run -d --name minecraft \
     --env-file ~/minecraft_server/properties.env \
     rdall96/minecraft-server:latest
 ```
+
+### JVM Properties
+
+You can customize the JVM runtime using JVM args. Add your args to the `jvm_args.txt` file in the server configurations directory (`/minecraft/configurations` in the container, or use the default mapped volume). For example, an argument you may want to specify is the maximum Java memory for the Minecraft server. i.e.: Add `-Xmx8G` in that file to allow the server to use up to 8GB of RAM.
+All arguments in this file are forwarded to the java process used to run the Minecraft server. You can add `-XX:+PrintFlagsFinal` to log all of the JVM parameters at startup.
 
 ## Issues
 All users are encouraged to report any issues they might run into or suggestions that would improve the experience of using this docker container. Simply send an email to [Minecraft Docker - Support](mailto:contact-project+rdall96-minecraft-docker-39680657-issue-@incoming.gitlab.com)

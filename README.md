@@ -112,6 +112,10 @@ docker run -d --name minecraft \
     rdall96/minecraft-server:latest
 ```
 
+### Server arguments
+
+You can specify additional Minecraft server (or mod loader) arguments by adding them to the docker command to create the container. For example, `docker run rdall96/minecraft-server:latest --help`, will print out all the server CLI options and quit.
+
 ### JVM Properties
 
 You can customize the JVM runtime using JVM args. Add your args to the `jvm_args.txt` file in the server configurations directory (`/minecraft/configurations` in the container, or use the default mapped volume). For example, an argument you may want to specify is the maximum Java memory for the Minecraft server. i.e.: Add `-Xmx8G` in that file to allow the server to use up to 8GB of RAM.

@@ -129,8 +129,8 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         cat server.properties
         
         # Start the server
-        echo -e "Starting server...\\n"
-        \(command)
+        echo -e "Starting server...\\nCustom args: $@\n"
+        \(command) $@
         """
     }
     

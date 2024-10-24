@@ -256,7 +256,7 @@ fileprivate func generateLatestTag(version: GameVersion, type: GameType) -> Dock
     case .vanilla:
         return type.latestTag
     case .fabric, .forge, .neoForged, .quilt:
-        return .init("\(version)-\(type.latestTag.name)")
+        return .init("\(version.minecraft)-\(type.latestTag.name)")
     }
 }
 

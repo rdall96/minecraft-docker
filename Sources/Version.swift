@@ -48,6 +48,7 @@ enum Version: String {
     
     /**
      - Users can specify custom JVM arguments in the jvm_args.txt file.
+     - Fixed bug with tagging the latest docker image when building specific mod loader versions.
      */
     case v2_5_0 = "2.5.0"
 }

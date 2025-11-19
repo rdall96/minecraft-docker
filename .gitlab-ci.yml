@@ -13,7 +13,7 @@ variables:
   DOCKER_HOST: tcp://docker:2376
   DOCKER_TLS_CERTDIR: "/certs"
   # Tag to use when building images
-  CLI_IMAGE_TAG: "latest"
+  CLI_IMAGE_TAG: "2.5.0"
 
 default:
   image: docker:28.5.2

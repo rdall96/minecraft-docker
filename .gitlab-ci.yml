@@ -16,9 +16,9 @@ variables:
   CLI_IMAGE_TAG: "latest"
 
 default:
-  image: docker:24.0.5
+  image: docker:28.5.2
   services:
-    - docker:24.0.5-dind
+    - docker:28.5.2-dind
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 

@@ -137,10 +137,10 @@ enum GameType: String, CustomStringConvertible {
     }
     
     /// Name of the `latest` image tag for this type of Minecraft
-    var latestTag: Docker.Tag {
-        if self == .vanilla { return .init("latest") }
-        else {
-            return .init("\(rawValue)_latest")
+    var latestTag: String {
+        switch self {
+        case .vanilla: "latest"
+        default: "\(rawValue)_latest"
         }
     }
 }

@@ -29,7 +29,7 @@ struct QuiltRuntime: MinecraftRuntime {
     }
     
     var startCommand: String {
-        "java $(cat user_jvm_args.txt) -jar quilt-server-launch.jar"
+        "java $(cat user_jvm_args.txt) -jar quilt-server-launch.jar $@"
     }
     
     var mappedVolumes: [String] {

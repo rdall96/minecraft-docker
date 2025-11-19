@@ -15,11 +15,12 @@ protocol MinecraftBuilderProtocol {
     func generateDockerFile(systemPackages: [String], installCommands: [String], volumes: [String]) -> String
     func generateStartupScript(serverProperties: [String], command: String) -> String
     
-    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> Docker.Image
 }
 
 final class MinecraftBuilder: MinecraftBuilderProtocol {
-    
+    private static let baseImageTag = Docker.Image.Tag(name: "alpine", tag: "3.22.2")
+
     let minecraftType: GameType
     
     init(for minecraftType: GameType) {
@@ -37,7 +38,7 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         let startupScriptPath = "\(MinecraftRuntimeDefaults.homeDirectory)/\(MinecraftRuntimeDefaults.startupScriptName)"
         
         return """
-        FROM alpine:latest
+        FROM \(Self.baseImageTag.description) AS base
         
         # Install the runtime (java) and other dependencies
         RUN apk update \
@@ -130,11 +131,11 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         
         # Start the server
         echo -e "Starting server...\\nCustom args: $@\n"
-        \(command) $@
+        \(command)
         """
     }
     
-    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> Docker.Image {
         let buildPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("minecraft_build")
             .appendingPathComponent("\(minecraftType.rawValue)_\(minecraftVersion)")
@@ -148,7 +149,10 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         catch {
             throw MinecraftDockerError.buildError("Failed to prepare build environment: \(error)")
         }
-        
+        defer {
+            try? FileManager.default.removeItem(at: buildPath)
+        }
+
         // create a runtime provider based on the minecraft type to build
         let session = URLSession(configuration: .default)
         let runtimeProvider: MinecraftRuntimeProvider
@@ -202,73 +206,60 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         catch {
             throw MinecraftDockerError.buildError("Failed to write generated build files to disk at \(buildPath.path)")
         }
-        
+
+        // we use BuildKit which requires the base image to exist locally before starting the build
+        try await DockerPullImageRequest(Self.baseImageTag).start()
+
         // build the image
-        let image = Docker.Image("\(imageName):\(runtime.name)")
-        // FIXME: the build hangs if it takes a long time (i.e.: forge), but it works fine the second time around, when there's a build cache.
-        // The current workaround is to kill this task if it takes longer than a few minutes and restart it, which will yield a better success rate.
-        // The actual root cause it probably in the DockerSwiftAPI library, so this workaround is necessary until that is fixed.
-        // Only do this for forge builds since they are the only ones that hang
-        let result: Docker.BuildResult
-        switch minecraftType {
-        case .forge, .neoForged:
-            result = try await buildWithCache(buildPath: buildPath, image: image)
-        default:
-            result = try await Docker.build(path: buildPath, tag: image)
-        }
-        
-        // remove the build env
-        try FileManager.default.removeItem(at: buildPath)
-        
-        // ensure the build was successful
-        switch result.status {
-        case .success:
-            guard let image = result.image else {
-                throw MinecraftDockerError.buildError("The image was built successfully, but no artifact was found")
-            }
-            var builtImages = [image]
-            // also tag the latest image if necessary
-            if tagLatest {
-                let latestImage = image.withNewTag(generateLatestTag(version: minecraftVersion, type: minecraftType))
-                try await Docker.tag(latestImage, source: image)
-                builtImages.append(latestImage)
-            }
-            return builtImages
-        case .failed(let error):
-            throw MinecraftDockerError.buildError(error.localizedDescription)
-        }
-    }
-}
-
-extension Docker.Image {
-    fileprivate func withNewTag(_ tag: Docker.Tag) -> Docker.Image {
-        .init(
-            repository: self.repository,
-            name: self.name,
+        let tag = Docker.Image.Tag(name: imageName, tag: runtime.name)
+        let build = try DockerBuildRequest(
+            at: buildPath,
             tag: tag,
-            digest: digest
+            labels: .labels(for: runtime.version, type: runtime.type),
+            useCache: false,
+            useBuildKit: true
         )
+        let image = try await build.start()
+
+        // also tag the latest image if necessary
+        if tagLatest {
+            // tag the image as latest and return the new object
+            // it's the same image (digest), but it has multiple tags
+            do {
+                return try await image.tag(.init(
+                    name: imageName,
+                    tag: generateLatestTag(version: minecraftVersion, type: minecraftType)
+                ))
+            }
+            catch {
+                MinecraftDockerLog.error("Failed to tag latest image from \(tag)")
+                return image
+            }
+        }
+        else {
+            return image
+        }
     }
 }
 
-fileprivate func generateLatestTag(version: GameVersion, type: GameType) -> Docker.Tag {
+fileprivate extension Docker.Labels {
+    static func labels(for version: GameVersion, type: GameType) -> Self {
+        var labels = [
+            "minecraft.server.type": type.rawValue,
+            "minecraft.server.version": version.minecraft,
+        ]
+        if let modLoaderVersion = version.modLoader {
+            labels["minecraft.server.modLoader.version"] = modLoaderVersion
+        }
+        return .init(labels)
+    }
+}
+
+fileprivate func generateLatestTag(version: GameVersion, type: GameType) -> String {
     switch type {
     case .vanilla:
         return type.latestTag
-    case .fabric, .forge, .neoForged, .quilt:
-        return .init("\(version.minecraft)-\(type.latestTag.name)")
+    default:
+        return "\(version.minecraft)-\(type.latestTag)"
     }
-}
-
-// TODO: Remove this when the cache build issues have been fixed in the DockerSwiftAPI library (see FIXME above)
-fileprivate func buildWithCache(buildPath: URL, image: Docker.Image) async throws -> Docker.BuildResult {
-    let buildTask = Task { _ = try await Docker.build(path: buildPath, tag: image) }
-    // check if the build is done every second, up to 2 minutes - there will be an image on the system
-    for _ in 1...120 {
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconds
-        if try await Docker.images.contains(image) { break }
-    }
-    // cancel the build task and start a new one, which will use the cache and complete immediately (hopefully)
-    buildTask.cancel()
-    return try await Docker.build(path: buildPath, tag: image)
 }

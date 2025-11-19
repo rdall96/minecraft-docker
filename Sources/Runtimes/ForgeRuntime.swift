@@ -31,9 +31,9 @@ struct ForgeRuntime: MinecraftRuntime {
     var startCommand: String {
         """
         if [[ -e "run.sh" ]]; then
-            bash run.sh --nogui
+            bash run.sh --nogui $@
         else
-            java $(cat user_jvm_args.txt) -jar forge*.jar --nogui
+            java $(cat user_jvm_args.txt) -jar forge*.jar --nogui $@
         fi
         """
     }

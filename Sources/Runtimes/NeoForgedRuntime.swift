@@ -29,7 +29,7 @@ struct NeoForgedRuntime: MinecraftRuntime {
     }
     
     var startCommand: String {
-        "bash run.sh --nogui"
+        "bash run.sh --nogui $@"
     }
     
     var mappedVolumes: [String] {

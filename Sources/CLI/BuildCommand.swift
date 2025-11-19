@@ -10,15 +10,16 @@ import ArgumentParser
 import DockerSwiftAPI
 
 struct BuildCommand: AsyncParsableCommand {
-    
+    private static let defaultImageName = "rdall96/minecraft-server"
+
     static let configuration = CommandConfiguration(
         commandName: "build",
         abstract: "Build a Minecraft server docker image. If credentials are specified, the image will also be uploaded to DockerHub."
     )
     
-    @Option(name: .shortAndLong, help: "Name of the Docker image to create.")
-    var name: String = "rdall96/minecraft-server"
-    
+    @Option(name: .shortAndLong, help: "Name of the Docker image to create. Default: \(Self.defaultImageName)")
+    var name: String = Self.defaultImageName
+
     @OptionGroup
     var minecraft: GameVersionOptions
     
@@ -48,111 +49,73 @@ struct BuildCommand: AsyncParsableCommand {
             }
         }
     }
-    
-    private func login() async throws {
+
+    private var authContext: DockerAuthenticationContext {
         guard let username = registry.username,
               let password = registry.password
         else {
             // this was already validated, so it should never happen, but we need to handle the case anyway
             fatalError("Expected server, username, and password for push action")
         }
-        try await Docker.login(username: username, password: password)
-        MinecraftDockerLog.log("Successfully logged into remote repository as \(username)")
+        return .init(username: username, password: password)
     }
-    
-    private func push(image: Docker.Image) async throws {
-        func _push(_ image: Docker.Image) async {
-            do {
-                MinecraftDockerLog.info("Pushing \(image)")
-                try await Docker.push(image)
-                MinecraftDockerLog.log("Pushed \(image) to remote")
-            }
-            catch let error as DockerError {
-                MinecraftDockerLog.error("Failed to push \(image) to remote repository: \(error.errorDescription)")
-            }
-            catch {
-                MinecraftDockerLog.error("An unknown error occurred: \(error)")
-            }
+
+    private func push(_ image: Docker.Image) async throws {
+        // we don't want to override existing images, unless we are told to do so (option: `force`).
+        // check if any of the tags to push already exist on the remote, and if they do, don't push the image.
+        // NOTE: we never tag the same image more than once with the exception of `latest`.
+        let tagToPush = image.tags.first { !$0.isLatest }
+        guard let tagToPush else {
+            MinecraftDockerLog.error("No tags found for image \(image.id). Ignoring push.")
+            throw MinecraftDockerError.pushFailed
         }
-        
-        // if we have `force` just push the image
-        if force {
-            MinecraftDockerLog.info("Force push is set, pushing image \(image)")
-            await _push(image)
-            return
+
+        // FIXME: Make the remote registry configurable
+        let remoteTags = try await DockerHub.tags(for: "minecraft-server", in: "rdall96")
+
+        if !force, remoteTags.contains(where: { $0.name == tagToPush.tag }) {
+            MinecraftDockerLog.warning("Remote tag \(tagToPush) already exists! Ignoring.")
+            throw MinecraftDockerError.remoteTagExists
         }
-        
-        // manifest for the remote image
-        guard let remoteImageManifest = (try? await Docker.manifest(for: image))?.first else {
-            // remote image doesn't exist
-            await _push(image)
-            return
+
+        // Push every tag
+        for tag in image.tags {
+            try await image.push(tag: tag, auth: authContext)
         }
-        // info for the local image
-        let imageInfo = try await Docker.inspect(image: image)
-        
-        let remoteImageTagExists = remoteImageManifest.config.digest == imageInfo.id
-        if remoteImageTagExists {
-            MinecraftDockerLog.warning("Remote tag \(image) already exists! Ignoring.")
-            return
-        }
-        await _push(image)
     }
     
     private func clean(images: [Docker.Image]) async throws -> UInt {
         var removedCount: UInt = 0
         for image in images {
-            try await Docker.remove(image: image)
+            try await image.remove()
             removedCount += 1
         }
         return removedCount
     }
     
-    private func build(version: GameVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> [Docker.Image] {
+    private func build(version: GameVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> Docker.Image? {
         MinecraftDockerLog.info("Building version \(version) ...")
         do {
-            var images = [Docker.Image]()
-            try await runFunctionAndTrack {
-                images = try await builder.build(
-                    minecraftVersion: version,
-                    imageName: name,
-                    tagLatest: tagLatest
-                )
-            }
-            if images.isEmpty {
-                MinecraftDockerLog.error("Fatal! Build succeeded but produced no images")
-                throw MinecraftDockerError.buildError("No images were built")
-            }
-            MinecraftDockerLog.log("Build successful! Artifacts: \(images.map({ $0.description }).joined(separator: ", "))")
-            return images
+            let image = try await builder.build(
+                minecraftVersion: version,
+                imageName: name,
+                tagLatest: tagLatest
+            )
+            MinecraftDockerLog.log("Build successful: \(image)")
+            return image
         }
         catch let error as DockerError {
-            MinecraftDockerLog.error("Build failed: \(error.errorDescription)")
-            return []
+            MinecraftDockerLog.error("Build failed: \(error.localizedDescription)")
+            return nil
         }
         catch {
             MinecraftDockerLog.error("An unknown error occurred: \(error)")
-            return []
+            return nil
         }
     }
     
     func run() async throws {
         MinecraftDockerLog.log("Building \(minecraft.description)")
-        
-        // If this run will require a push, try to login before building anything
-        if push {
-            do {
-                try await login()
-            }
-            catch let error as DockerError {
-                MinecraftDockerLog.error("Failed to log into remote repository: \(error.errorDescription)")
-                throw MinecraftDockerError.loginFailed
-            }
-            catch {
-                MinecraftDockerLog.error("An unknown error occurred: \(error)")
-                throw MinecraftDockerError.loginFailed
-            }
-        }
         
         // create a builder
         let builder = MinecraftBuilder(for: minecraft.type)
@@ -199,26 +162,42 @@ struct BuildCommand: AsyncParsableCommand {
         // only tag the latest image if we are tracking it (in the imagesToBuild list)
         let possibleLatestImage = hasLatestImage ? versionsToBuild.first : nil
         for version in versionsToBuild.reversed() {
-            let builtImage = await build(
-                version: version,
-                with: builder,
-                tagLatest: version == possibleLatestImage
-            )
-            builtImages.append(contentsOf: builtImage)
+            try await runFunctionAndTrack {
+                let builtImage = await build(
+                    version: version,
+                    with: builder,
+                    tagLatest: version == possibleLatestImage
+                )
+                if let builtImage {
+                    builtImages.append(builtImage)
+                }
+            }
         }
         
         // push
         if push {
+            // create a list of tags to push
             MinecraftDockerLog.log("Will push \(builtImages.count) image(s) to remote")
             do {
                 try await runFunctionAndTrack {
+                    // only push unique tags
                     for image in builtImages {
-                        try await push(image: image)
+                        do {
+                            try await push(image)
+                            MinecraftDockerLog.log("Pushed \(image) to remote")
+                        }
+                        catch MinecraftDockerError.remoteTagExists { /*no-op*/ }
+                        catch let error as DockerError {
+                            MinecraftDockerLog.error("Failed to push \(image) to remote repository: \(error.localizedDescription)")
+                        }
+                        catch {
+                            MinecraftDockerLog.error("An unknown error occurred: \(error)")
+                        }
                     }
                 }
             }
             catch let error as DockerError {
-                MinecraftDockerLog.error("Failed to push (some) image(s) to remote: \(error.errorDescription)")
+                MinecraftDockerLog.error("Failed to push image(s) to remote: \(error.localizedDescription)")
                 throw MinecraftDockerError.pushFailed
             }
             catch {
@@ -235,7 +214,7 @@ struct BuildCommand: AsyncParsableCommand {
                 MinecraftDockerLog.log("Removed \(removedCount) built image(s)")
             }
             catch let error as DockerError {
-                MinecraftDockerLog.error("Cleanup failed: \(error.errorDescription)")
+                MinecraftDockerLog.error("Cleanup failed: \(error.localizedDescription)")
                 throw MinecraftDockerError.cleanupFailed
             }
             catch {
@@ -244,4 +223,9 @@ struct BuildCommand: AsyncParsableCommand {
             }
         }
     }
+}
+
+fileprivate extension Docker.Image.Tag {
+    /// This tag contains the keyword `latest` indicating it's the newest tag for a givne image.
+    var isLatest: Bool { tag.contains("latest") }
 }

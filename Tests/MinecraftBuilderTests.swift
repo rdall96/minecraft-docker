@@ -13,25 +13,26 @@ protocol MinecraftBuilderTestCase: XCTestCase {
     var builder: MinecraftBuilder! { get }
     var builtImages: [Docker.Image] { get set }
     
-    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image]
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> Docker.Image
     func cleanup() async throws
 }
 
 extension MinecraftBuilderTestCase {
-    
-    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> [Docker.Image] {
-        let images = try await builder.build(
+
+    @discardableResult
+    func build(minecraftVersion: GameVersion, imageName: String, tagLatest: Bool) async throws -> Docker.Image {
+        let image = try await builder.build(
             minecraftVersion: minecraftVersion,
             imageName: imageName,
             tagLatest: tagLatest
         )
-        builtImages.append(contentsOf: images)
-        return images
+        builtImages.append(image)
+        return image
     }
     
     func cleanup() async throws {
         for image in builtImages {
-            try await Docker.remove(image: image)
+            try await image.remove(force: true)
         }
     }
 }
@@ -47,8 +48,7 @@ final class VanillaBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     
     func testBuildHappyPath() async throws {
         builder = MinecraftBuilder(for: .vanilla)
-        let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
-        builtImages.append(contentsOf: images)
+        try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
     }
 }
 
@@ -58,22 +58,20 @@ final class FabricBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     var builtImages: [Docker.Image] = []
     
     override func tearDown() async throws {
-//        try await cleanup()
+        try await cleanup()
     }
     
     func testBuildHappyPath() async throws {
         builder = MinecraftBuilder(for: .fabric)
-        let images = try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
-        builtImages.append(contentsOf: images)
+        try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
     }
     
     func testBuildCustomVersion() async throws {
         builder = MinecraftBuilder(for: .fabric)
-        let images = try await build(
+        try await build(
             minecraftVersion: .init(minecraft: "1.21", modLoader: "0.15.7"),
             imageName: "minecraft",
             tagLatest: false
         )
-        builtImages.append(contentsOf: images)
     }
 }

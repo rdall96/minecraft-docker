@@ -9,6 +9,7 @@ import Foundation
 import ArgumentParser
 import DockerSwiftAPI
 
+/// The run command was removed when the CLI updated to DockerSwiftAPI lib 2.0.0.
 struct RunCommand: AsyncParsableCommand {
     
     static let configuration = CommandConfiguration(
@@ -54,15 +55,16 @@ struct RunCommand: AsyncParsableCommand {
         // build the image if necessary
         if build {
             // don't build the image if it already exists
-            if !(try await Docker.images.contains(.minecraftServerImage(version: minecraft.version))) {
+            let image = try await DockerImagesRequest.minecraftServerImage(version: minecraft.version)
+            if image != nil {
+                MinecraftDockerLog.log("A Docker image for this server version already exists, will ignore the `--build` argument.")
+            }
+            else {
                 let buildTask = try BuildCommand.parse([
                     "--type", "\(minecraft.type.rawValue)",
                     "--version", "\(minecraft.version)"
                 ])
                 try await buildTask.run()
-            }
-            else {
-                MinecraftDockerLog.log("A Docker image for this server version already exists, will ignore the `--build` argument.")
             }
         }
         
@@ -85,23 +87,25 @@ struct RunCommand: AsyncParsableCommand {
         }
         
         do {
-            let container = try await Docker.run(
-                image: .minecraftServerImage(version: minecraft.version),
-                with: .init(
-                    environment: [.acceptEula], // not support for other environemnt variables yet, so jsut accept the EULA
-                    name: name ?? "minecraft-server-\(minecraft.type.rawValue)_\(minecraft.version)",
-                    ports: [.defaults],
-                    removeWhenStopped: clean,
-                    volumes: gameDirectories.enumerated().map { index, directory in
-                        .init(
-                            hostPath: directory.path,
-                            containerPath: "\(MinecraftRuntimeDefaults.homeDirectory)/\(MinecraftRuntimeDefaults.mappedVolumes[index])"
-                        )
-                    }
-                ),
-                pull: false // this will realistically pull anyway if the image really doesn't exist, but in theory it should
-            )
-            MinecraftDockerLog.log("Created container: \(container.name ?? "-")")
+            // FIXME: Needs run behavior for DockerSwiftAPI@2.0.0
+            throw DockerError.unknown
+//            let container = try await Docker.run(
+//                image: .minecraftServerImage(version: minecraft.version),
+//                with: .init(
+//                    environment: [.acceptEula], // not support for other environment variables yet, so just accept the EULA
+//                    name: name ?? "minecraft-server-\(minecraft.type.rawValue)_\(minecraft.version)",
+//                    ports: [.defaults],
+//                    removeWhenStopped: clean,
+//                    volumes: gameDirectories.enumerated().map { index, directory in
+//                        .init(
+//                            hostPath: directory.path,
+//                            containerPath: "\(MinecraftRuntimeDefaults.homeDirectory)/\(MinecraftRuntimeDefaults.mappedVolumes[index])"
+//                        )
+//                    }
+//                ),
+//                pull: false // this will realistically pull anyway if the image really doesn't exist, but in theory it should
+//            )
+//            MinecraftDockerLog.log("Created container: \(container.name ?? "-")")
         }
         catch {
             MinecraftDockerLog.error("Failed to start Docker container for \(minecraft.description): \(error)")
@@ -109,16 +113,21 @@ struct RunCommand: AsyncParsableCommand {
     }
 }
 
-extension Docker.Image {
-    fileprivate static func minecraftServerImage(version: GameVersion) -> Self {
-        .init(repository: "rdall96", name: "minecraft-server", tag: .init(version.description))
+fileprivate extension DockerImagesRequest {
+    private static let minecraftServerImageName: String = "rdall96/minecraft-server"
+
+    static func minecraftServerImage(version: GameVersion) async throws -> Docker.Image? {
+        try await DockerImagesRequest.image(tag: .init(
+            name: Self.minecraftServerImageName,
+            tag: version.description
+        ))
     }
 }
 
-extension Docker.ContainerSpec.EnvironmentVariable {
-    fileprivate static var acceptEula = Self(key: "EULA", value: "true")
+fileprivate extension Docker.EnvironmentVariable {
+    static var acceptMinecraftEula: Self = .init(key: "EULA", value: "true")
 }
 
-extension Docker.ContainerSpec.PortMapping {
-    fileprivate static var defaults = Self(hostPort: 25565, containerPort: 25565, protocol: .tcp)
+fileprivate extension Docker.Container.PortMap {
+    static var defaultMinecraftPort: Self = .init(hostPort: 25565, containerPort: 25565, type: .tcp)
 }

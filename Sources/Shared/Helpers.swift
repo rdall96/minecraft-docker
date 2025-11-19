@@ -7,7 +7,7 @@
 
 import Foundation
 
-func runFunctionAndTrack(_ function: () async throws -> Void) async throws {
+func runFunctionAndTrack(_ function: @escaping () async throws -> Void) async throws {
     let referenceTime: Date = .now
     try await function()
     let timeElapsedDescription = String(format: "%.1f second(s)", abs(referenceTime.timeIntervalSinceNow))

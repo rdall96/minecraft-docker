@@ -33,10 +33,3 @@ struct RegistryOptions: ParsableArguments {
         }
     }
 }
-
-extension Docker.Registry: Decodable {
-    var isValid: Bool {
-        if rawValue.isEmpty { return true }
-        return URL(string: rawValue) != nil
-    }
-}

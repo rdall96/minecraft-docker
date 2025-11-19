@@ -1,5 +1,9 @@
 # Minecraft Server - Docker
 
+> [!NOTE]
+> This package is the build system that creates Minecraft Docker images, not the image itself.
+> Use this if you wish to create custom builds of Minecraft server images, otherwise, see [rdall96/minecraft-server](https://hub.docker.com/r/rdall96/minecraft-server) for pre-built images.
+
 This docker image based on Alpine Linux contains the necessary components to run a Minecraft server. The project supports the following Minecraft versions:
 * Vanilla (Java) - [Official site](https://www.minecraft.net/en-us)
 * Forge - [Minecraft Forge](https://files.minecraftforge.net/net/minecraftforge/forge/)

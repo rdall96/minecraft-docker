@@ -1,7 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM swift:5.8-jammy as build
+FROM swift:5.10-jammy AS build
 
 ARG BUILD_TYPE="release"
 

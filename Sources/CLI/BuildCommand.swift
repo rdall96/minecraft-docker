@@ -94,7 +94,7 @@ struct BuildCommand: AsyncParsableCommand {
     private func clean(images: [Docker.Image]) async throws -> UInt {
         var removedCount: UInt = 0
         for image in images {
-            try await dockerClient.remove(image)
+            try await dockerClient.remove(image, force: true)
             removedCount += 1
         }
         return removedCount

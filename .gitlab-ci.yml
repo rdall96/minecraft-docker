@@ -3,62 +3,57 @@
 
 stages:
   - test
-  - build-cli
-  - create-image
+  - build
+  - create_image
 
 variables:
-  CLI_IMAGE_NAME: "rdall96/minecraft-docker"
   RELEASE_TAG: '/^\d.\d.\d$/'
-  # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
-  DOCKER_HOST: tcp://docker:2376
+  # Docker-in-Docker setup
+  DOCKER_HOST: "tcp://docker:2376"
   DOCKER_TLS_CERTDIR: "/certs"
-  # Tag to use when building images
-  CLI_IMAGE_TAG: "2.5.0"
+  # Builder CLI image to use when building Minecraft server images
+  BUILDER_CLI_IMAGE: "$CI_REGISTRY/rdall96/minecraft-docker"
+  BUILDER_CLI_TAG: "2.5.0"
 
-default:
-  image: docker:28.5.2
-  services:
-    - docker:28.5.2-dind
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
-# Build the CLI for testing
-cli-build:
+# Make sure the project builds
+test-build:
   stage: test
+  tags:
+    - dev
+  image: swift:6.2.1-noble
+  before_script:
+    - swift --version
   script:
-    - docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
-    - docker run --rm $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA --help
+    - swift package resolve
+    - swift build -c release --static-swift-stdlib
   rules:
     # only run this job for merge requests
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  tags:
-    - tools
 
-# Build the CLI for release
-release-cli-build:
-  stage: build-cli
-  script:
-    - |
-      docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG . \
-      --build-arg CLI_VERSION=$CI_COMMIT_TAG
-    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG
-    - docker tag $CI_REGISTRY/$CLI_IMAGE_NAME:$CI_COMMIT_TAG $CI_REGISTRY/$CLI_IMAGE_NAME:latest
-    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:latest
-  rules:
-    # only run this job when a new release tag is created
-    - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
-  tags:
-    - tools
 
 # Build the CLI for debugging
 dev-cli-build:
-  stage: build-cli
+  stage: build
+  tags:
+    - tools
+  image: docker:28.5.2-cli
+  services:
+    - docker:28.5.2-dind
+  before_script:
+    - docker info
+    # Login to the GitLab container registry
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
+    # Build the CLI image for debugging
     - |
-      docker build -t $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA . \
+      docker build -t $BUILDER_CLI_IMAGE:dev-$CI_COMMIT_SHORT_SHA . \
       --build-arg CLI_VERSION=dev-$CI_COMMIT_SHORT_SHA \
       --build-arg BUILD_TYPE=debug
-    - docker push $CI_REGISTRY/$CLI_IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA
+    # Print out the built CLI version
+    - docker run --rm $BUILDER_CLI_IMAGE:dev-$CI_COMMIT_SHORT_SHA version
+    # Push the image to the registry
+    - docker push $BUILDER_CLI_IMAGE:dev-$CI_COMMIT_SHORT_SHA
   rules:
     # only run this job when a new commit is created and we don't have a tag
     - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
@@ -74,36 +69,65 @@ dev-cli-build:
         - Sources/**/*
         - Package.*
       when: always
+
+
+# Build the CLI for release
+release-cli-build:
+  stage: build
   tags:
     - tools
-
-
-# Scheduled builds
-
-minecraft-server:
-  stage: create-image
+  image: docker:28.5.2-cli
+  services:
+    - docker:28.5.2-dind
+  before_script:
+    - docker info
+    # Login to the GitLab container registry
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
+    # Build the CLI image
+    - |
+      docker build -t $BUILDER_CLI_IMAGE:$CI_COMMIT_TAG . \
+      --build-arg CLI_VERSION=$CI_COMMIT_TAG
+    # Print out the built CLI version
+    - docker run --rm $BUILDER_CLI_IMAGE:$CI_COMMIT_TAG version
+    # Push the image to the internal registry and tag as latest
+    - docker push $BUILDER_CLI_IMAGE:$CI_COMMIT_TAG
+    - docker tag $BUILDER_CLI_IMAGE:$CI_COMMIT_TAG $BUILDER_CLI_IMAGE:latest
+    - docker push $BUILDER_CLI_IMAGE:latest
+  rules:
+    # only run this job when a new release tag is created
+    - if: $CI_COMMIT_TAG =~ $RELEASE_TAG
+
+
+# Minecraft server image builds
+minecraft-server:
+  stage: create_image
+  tags:
+    - minecraft
+  image: docker:28.5.2-cli
+  services:
+    - docker:28.5.2-dind
+  before_script:
+    - docker info
+    # Login to the GitLab container registry
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    # Pull the CLI image
+    - docker pull $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG
     - echo "Building Docker image for $MINECRAFT_TYPE Minecraft version $MINECRAFT_VERSION"
-    - docker pull $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG
-    # Logout from GitLab registry
-    - docker logout $CI_REGISTRY
-    # Print out the version being used
+    # Print out the CLI version being used
+    - |
+      docker run --rm $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG version
+    # Build the Minecraft image and push it to DockerHub
     - |
       docker run --rm \
       -v /var/run/docker.sock:/var/run/docker.sock \
-      $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG \
-      version
-    # Run the build
-    - |
-      docker run --rm \
-      -v /var/run/docker.sock:/var/run/docker.sock \
-      $CI_REGISTRY/$CLI_IMAGE_NAME:$CLI_IMAGE_TAG \
+      $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG \
       build -t $MINECRAFT_TYPE -v $MINECRAFT_VERSION \
       --push -u $MINECRAFT_SERVER_REPOSITORY_USERNAME -p $MINECRAFT_SERVER_REPOSITORY_PASSWORD \
       --clean
   rules:
+    # Only run this when we have a valid Minecraft type and version and for pipeline triggers
     - if: $MINECRAFT_VERSION == null || $MINECRAFT_VERSION == ""
       when: never
     - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"
-  tags:
-    - build

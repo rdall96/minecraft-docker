@@ -27,7 +27,7 @@ struct JavaVersion: RawRepresentable, CustomStringConvertible, Equatable {
     static let java23 = JavaVersion(rawValue: 23)
     static let java24 = JavaVersion(rawValue: 24)
     
-    static var latest: Self = .java21
+    static let latest: Self = .java21
     
     /// Name of the java runtime package to be installed
     var packageName: String {

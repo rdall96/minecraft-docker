@@ -7,11 +7,12 @@
 
 import Foundation
 
-func runFunctionAndTrack(_ function: @escaping () async throws -> Void) async throws {
+func recordRuntime<T>(of function: String, task: @escaping () async throws -> T) async throws -> T {
     let referenceTime: Date = .now
-    try await function()
+    let result = try await task()
     let timeElapsedDescription = String(format: "%.1f second(s)", abs(referenceTime.timeIntervalSinceNow))
-    MinecraftDockerLog.info("Time elapsed: \(timeElapsedDescription)")
+    MinecraftDockerLog.info("\(function) - Time elapsed: \(timeElapsedDescription)")
+    return result
 }
 
 func resolvedPath(for string: String) -> URL? {

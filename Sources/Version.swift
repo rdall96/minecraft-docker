@@ -52,10 +52,19 @@ enum Version: String {
      - Fixed bug with tagging the latest docker image when building specific mod loader versions.
      */
     case v2_5_0 = "2.5.0"
+
+    /**
+     - Updated the underlying library used to run Docker actions: the new versions is more robust and fixes a long standing issue with some Minecraft builds hanging.
+     - Updated Swift toolchain: 5.8 -> 5.10
+     - Cleaned up logic to push images to DockerHub after building.
+     - Throw an error from the build command if all images fail to build.
+     - Option to specify which Docker connection to use: local socket, or server.
+     */
+    case v2_6_1 = "2.6.1"
 }
 
 extension Version {
-    static var current: Self = .v2_4_0
+    static let current: Self = .v2_6_1
 }
 
 extension Version: CustomStringConvertible {

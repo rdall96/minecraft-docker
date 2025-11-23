@@ -22,9 +22,11 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
     private static let baseImageTag = Docker.Image.Tag(name: "alpine", tag: "3.22.2")
 
     let minecraftType: GameType
-    
-    init(for minecraftType: GameType) {
+    let dockerClient: DockerClient
+
+    init(for minecraftType: GameType, with dockerClient: DockerClient) {
         self.minecraftType = minecraftType
+        self.dockerClient = dockerClient
     }
     
     func generateDockerFile(
@@ -208,28 +210,28 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
         }
 
         // we use BuildKit which requires the base image to exist locally before starting the build
-        try await DockerPullImageRequest(Self.baseImageTag).start()
+        try await dockerClient.pullImage(with: Self.baseImageTag)
 
         // build the image
         let tag = Docker.Image.Tag(name: imageName, tag: runtime.name)
-        let build = try DockerBuildRequest(
+        let image = try await dockerClient.buildImage(
             at: buildPath,
             tag: tag,
             labels: .labels(for: runtime.version, type: runtime.type),
             useCache: false,
             useBuildKit: true
         )
-        let image = try await build.start()
 
         // also tag the latest image if necessary
         if tagLatest {
             // tag the image as latest and return the new object
             // it's the same image (digest), but it has multiple tags
             do {
-                return try await image.tag(.init(
-                    name: imageName,
+                let newTag = Docker.Image.Tag(
+                    name: tag.name,
                     tag: generateLatestTag(version: minecraftVersion, type: minecraftType)
-                ))
+                )
+                return try await dockerClient.tag(image: image, newTag)
             }
             catch {
                 MinecraftDockerLog.error("Failed to tag latest image from \(tag)")
@@ -244,22 +246,20 @@ final class MinecraftBuilder: MinecraftBuilderProtocol {
 
 fileprivate extension Docker.Labels {
     static func labels(for version: GameVersion, type: GameType) -> Self {
-        var labels = [
-            "minecraft.server.type": type.rawValue,
-            "minecraft.server.version": version.minecraft,
-        ]
+        var labels = Docker.Labels()
+        labels.add(name: "minecraft.server.type", value: type.rawValue)
+        labels.add(name: "minecraft.server.version", value: version.minecraft)
         if let modLoaderVersion = version.modLoader {
-            labels["minecraft.server.modLoader.version"] = modLoaderVersion
+            labels.add(name: "minecraft.server.isModded", value: "true")
+            labels.add(name: "minecraft.server.modLoader.version", value: modLoaderVersion)
         }
-        return .init(labels)
+        return labels
     }
 }
 
 fileprivate func generateLatestTag(version: GameVersion, type: GameType) -> String {
     switch type {
-    case .vanilla:
-        return type.latestTag
-    default:
-        return "\(version.minecraft)-\(type.latestTag)"
+    case .vanilla: type.latestTag
+    default: "\(version.minecraft)-\(type.latestTag)"
     }
 }

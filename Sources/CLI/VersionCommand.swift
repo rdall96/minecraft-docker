@@ -16,7 +16,7 @@ struct VersionCommand: ParsableCommand {
     
     func run() throws {
         // if this is running in the docker context, there's a "version" file at the current working directory,
-        // otherwise, use the in-code version (should only happen for Xcode)
+        // otherwise, use the in-code version
         var versionString = Version.current.description
         
         if let workingDirectory = URL(string: FileManager.default.currentDirectoryPath) {

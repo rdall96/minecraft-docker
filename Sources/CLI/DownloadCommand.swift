@@ -89,7 +89,7 @@ struct DownloadCommand: AsyncParsableCommand {
         // download the executable
         MinecraftDockerLog.log("Downloading Minecraft \(downloadVersion) with \(downloader.runtimeProvider.self)...")
         do {
-            try await runFunctionAndTrack {
+            try await recordRuntime(of: "Download") {
                 let serverUrl = try await downloader.download(version: downloadVersion, to: pathUrl)
                 MinecraftDockerLog.log("Server executable (\(minecraft.type.rawValue)-\(minecraft.version)) downloaded at: \(serverUrl.path)")
             }

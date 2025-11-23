@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol MinecraftRuntime {
+protocol MinecraftRuntime: Sendable {
     /// Type of Minecraft runtime
     var type: GameType { get }
     /// Minecraft version
@@ -31,7 +31,7 @@ protocol MinecraftRuntime {
     var javaVersion: JavaVersion? { get }
 }
 
-protocol MinecraftRuntimeProvider {
+protocol MinecraftRuntimeProvider: Sendable {
     var session: URLSession { get }
     
     /// List all the available game version for this type of Miencraft

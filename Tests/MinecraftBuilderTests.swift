@@ -9,6 +9,8 @@
 import XCTest
 import DockerSwiftAPI
 
+nonisolated(unsafe) fileprivate let dockerClient = DockerClient(connection: .defaultSocket)
+
 protocol MinecraftBuilderTestCase: XCTestCase {
     var builder: MinecraftBuilder! { get }
     var builtImages: [Docker.Image] { get set }
@@ -32,7 +34,7 @@ extension MinecraftBuilderTestCase {
     
     func cleanup() async throws {
         for image in builtImages {
-            try await image.remove(force: true)
+            try await dockerClient.remove(image, force: true)
         }
     }
 }
@@ -47,7 +49,7 @@ final class VanillaBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     }
     
     func testBuildHappyPath() async throws {
-        builder = MinecraftBuilder(for: .vanilla)
+        builder = MinecraftBuilder(for: .vanilla, with: dockerClient)
         try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
     }
 }
@@ -62,12 +64,12 @@ final class FabricBuilderTests: XCTestCase, MinecraftBuilderTestCase {
     }
     
     func testBuildHappyPath() async throws {
-        builder = MinecraftBuilder(for: .fabric)
+        builder = MinecraftBuilder(for: .fabric, with: dockerClient)
         try await build(minecraftVersion: .init(minecraft: "1.20.1"), imageName: "minecraft", tagLatest: false)
     }
     
     func testBuildCustomVersion() async throws {
-        builder = MinecraftBuilder(for: .fabric)
+        builder = MinecraftBuilder(for: .fabric, with: dockerClient)
         try await build(
             minecraftVersion: .init(minecraft: "1.21", modLoader: "0.15.7"),
             imageName: "minecraft",

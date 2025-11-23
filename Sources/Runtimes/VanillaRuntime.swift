@@ -31,12 +31,12 @@ struct VanillaRuntime: MinecraftRuntime {
 /// https://www.minecraft.net/en-us
 /// API: https://wiki.vg/Mojang_API
 /// Alt: https://mcversions.net
-final class VanillaRuntimeProvider: MinecraftRuntimeProvider {
+final actor VanillaRuntimeProvider: MinecraftRuntimeProvider {
     static private let versionJsonUrl = URL(string: "https://launchermeta.mojang.com/mc/game/version_manifest.json")!
     
     let session: URLSession
     private var versionsManifest: VanillaVersionManifest? = nil
-    
+
     init(session: URLSession) {
         self.session = session
     }

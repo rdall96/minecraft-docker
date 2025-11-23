@@ -1,7 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM swift:5.10-jammy AS build
+FROM swift:6.2.1-noble AS build
 
 ARG BUILD_TYPE="release"
 
@@ -41,7 +41,7 @@ RUN cp \
 # ================================
 # Run image
 # ================================
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 ARG CLI_VERSION="(unknown)"
 

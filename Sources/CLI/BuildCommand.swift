@@ -16,7 +16,10 @@ struct BuildCommand: AsyncParsableCommand {
         commandName: "build",
         abstract: "Build a Minecraft server docker image. If credentials are specified, the image will also be uploaded to DockerHub."
     )
-    
+
+    @OptionGroup
+    var dockerConnection: DockerConnectionOptions
+
     @Option(name: .shortAndLong, help: "Name of the Docker image to create. Default: \(Self.defaultImageName)")
     var name: String = Self.defaultImageName
 
@@ -50,14 +53,16 @@ struct BuildCommand: AsyncParsableCommand {
         }
     }
 
-    private var authContext: DockerAuthenticationContext {
-        guard let username = registry.username,
-              let password = registry.password
-        else {
-            // this was already validated, so it should never happen, but we need to handle the case anyway
-            fatalError("Expected server, username, and password for push action")
+    private var dockerClient: DockerClient {
+        let client = dockerConnection.client
+
+        // this was already validated, so it should never happen, but we need to handle the case anyway
+        if let username = registry.username,
+           let password = registry.password {
+            client.authentication = .init(username: username, password: password)
         }
-        return .init(username: username, password: password)
+
+        return client
     }
 
     private func push(_ image: Docker.Image) async throws {
@@ -74,20 +79,22 @@ struct BuildCommand: AsyncParsableCommand {
         let remoteTags = try await DockerHub.tags(for: "minecraft-server", in: "rdall96")
 
         if !force, remoteTags.contains(where: { $0.name == tagToPush.tag }) {
-            MinecraftDockerLog.warning("Remote tag \(tagToPush) already exists! Ignoring.")
             throw MinecraftDockerError.remoteTagExists
         }
 
         // Push every tag
         for tag in image.tags {
-            try await image.push(tag: tag, auth: authContext)
+            try await recordRuntime(of: "Push (\(tag))") {
+                try await dockerClient.push(image, tag: tag)
+                MinecraftDockerLog.log("Pushed \(tag)")
+            }
         }
     }
     
     private func clean(images: [Docker.Image]) async throws -> UInt {
         var removedCount: UInt = 0
         for image in images {
-            try await image.remove()
+            try await dockerClient.remove(image)
             removedCount += 1
         }
         return removedCount
@@ -96,20 +103,22 @@ struct BuildCommand: AsyncParsableCommand {
     private func build(version: GameVersion, with builder: MinecraftBuilder, tagLatest: Bool = false) async -> Docker.Image? {
         MinecraftDockerLog.info("Building version \(version) ...")
         do {
-            let image = try await builder.build(
-                minecraftVersion: version,
-                imageName: name,
-                tagLatest: tagLatest
-            )
-            MinecraftDockerLog.log("Build successful: \(image)")
-            return image
+            return try await recordRuntime(of: "Build (\(version))") {
+                let image = try await builder.build(
+                    minecraftVersion: version,
+                    imageName: name,
+                    tagLatest: tagLatest
+                )
+                MinecraftDockerLog.log("Built \(image)")
+                return image
+            }
         }
         catch let error as DockerError {
-            MinecraftDockerLog.error("Build failed: \(error.localizedDescription)")
+            MinecraftDockerLog.error("\(version) build failed: \(error.localizedDescription)")
             return nil
         }
         catch {
-            MinecraftDockerLog.error("An unknown error occurred: \(error)")
+            MinecraftDockerLog.error("An unknown error occurred building \(version): \(error.localizedDescription)")
             return nil
         }
     }
@@ -118,7 +127,7 @@ struct BuildCommand: AsyncParsableCommand {
         MinecraftDockerLog.log("Building \(minecraft.description)")
         
         // create a builder
-        let builder = MinecraftBuilder(for: minecraft.type)
+        let builder = MinecraftBuilder(for: minecraft.type, with: dockerClient)
         
         // if "all" is specified as the version, we need to cache all the versions to build and call them in succession
         let session = URLSession(configuration: .default)
@@ -159,59 +168,58 @@ struct BuildCommand: AsyncParsableCommand {
         
         // build the images
         var builtImages = [Docker.Image]()
+        var failedBuilds: [GameVersion] = []
         // only tag the latest image if we are tracking it (in the imagesToBuild list)
         let possibleLatestImage = hasLatestImage ? versionsToBuild.first : nil
         for version in versionsToBuild.reversed() {
-            try await runFunctionAndTrack {
-                let builtImage = await build(
-                    version: version,
-                    with: builder,
-                    tagLatest: version == possibleLatestImage
-                )
-                if let builtImage {
-                    builtImages.append(builtImage)
-                }
+            let builtImage = await build(
+                version: version,
+                with: builder,
+                tagLatest: version == possibleLatestImage
+            )
+            if let builtImage {
+                builtImages.append(builtImage)
+            }
+            else {
+                failedBuilds.append(version)
             }
         }
-        
+        if builtImages.isEmpty {
+            MinecraftDockerLog.error("No images were built!")
+        }
+        else {
+            MinecraftDockerLog.log("Built \(builtImages.count) image(s)!")
+        }
+        if !failedBuilds.isEmpty {
+            MinecraftDockerLog.warning("Failed builds: \(failedBuilds.map(\.description).joined(separator: ", "))")
+            throw MinecraftDockerError.buildError("Some images failed to build")
+        }
+
         // push
         if push {
-            // create a list of tags to push
             MinecraftDockerLog.log("Will push \(builtImages.count) image(s) to remote")
-            do {
-                try await runFunctionAndTrack {
-                    // only push unique tags
-                    for image in builtImages {
-                        do {
-                            try await push(image)
-                            MinecraftDockerLog.log("Pushed \(image) to remote")
-                        }
-                        catch MinecraftDockerError.remoteTagExists { /*no-op*/ }
-                        catch let error as DockerError {
-                            MinecraftDockerLog.error("Failed to push \(image) to remote repository: \(error.localizedDescription)")
-                        }
-                        catch {
-                            MinecraftDockerLog.error("An unknown error occurred: \(error)")
-                        }
-                    }
+            for image in builtImages {
+                do {
+                    try await push(image)
                 }
-            }
-            catch let error as DockerError {
-                MinecraftDockerLog.error("Failed to push image(s) to remote: \(error.localizedDescription)")
-                throw MinecraftDockerError.pushFailed
-            }
-            catch {
-                MinecraftDockerLog.error("An unknown error occurred: \(error)")
-                throw MinecraftDockerError.pushFailed
+                catch MinecraftDockerError.remoteTagExists {
+                    MinecraftDockerLog.warning("\(image) already exists in the registry, skipping push")
+                }
+                catch let error as DockerError {
+                    MinecraftDockerLog.error("Failed to push \(image) to registry: \(error.localizedDescription)")
+                }
+                catch {
+                    MinecraftDockerLog.error("An unknown error occurred when pushing \(image): \(error)")
+                }
             }
         }
         
         // clean
         if clean {
-            MinecraftDockerLog.info("Removing built artifacts")
+            MinecraftDockerLog.log("Removing build artifacts")
             do {
                 let removedCount = try await clean(images: builtImages)
-                MinecraftDockerLog.log("Removed \(removedCount) built image(s)")
+                MinecraftDockerLog.info("Removed \(removedCount) built image(s)")
             }
             catch let error as DockerError {
                 MinecraftDockerLog.error("Cleanup failed: \(error.localizedDescription)")

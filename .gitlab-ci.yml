@@ -13,7 +13,7 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   # Builder CLI image to use when building Minecraft server images
   BUILDER_CLI_IMAGE: "$CI_REGISTRY/rdall96/minecraft-docker"
-  BUILDER_CLI_TAG: "2.5.0"
+  BUILDER_CLI_TAG: "2.6.1"
 
 
 # Make sure the project builds

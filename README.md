@@ -14,6 +14,8 @@ This docker image based on Alpine Linux contains the necessary components to run
 * NeoForge - [NeoForged](https://neoforged.net/)
 * Quilt - [Quilt Project](https://quiltmc.org/en/)
 
+---
+
 ## Installation
 
 Pull the image to your local machine with:
@@ -36,6 +38,8 @@ The new server will be running at `localhost:25565` or `<your-ip-address-here>:2
 > A note regarding port forwarding.
 > Opening ports on your network can be unsafe and expose you to malicious attacks, please proceed with caution and keep in mind there is a risk involved with it.
 > This project's only goal is to run a Minecraft server, it and its owners are not responsible for any damage caused to you due to its usage with port forwarding.
+
+---
 
 ## Customization
 
@@ -133,6 +137,8 @@ You can specify additional Minecraft server (or mod loader) arguments by adding 
 
 You can customize the JVM runtime using JVM args. Add your args to the `jvm_args.txt` file in the server configurations directory (`/minecraft/configurations` in the container, or use the default mapped volume). For example, an argument you may want to specify is the maximum Java memory for the Minecraft server. i.e.: Add `-Xmx8G` in that file to allow the server to use up to 8GB of RAM.
 All arguments in this file are forwarded to the java process used to run the Minecraft server. You can add `-XX:+PrintFlagsFinal` to log all of the JVM parameters at startup.
+
+---
 
 ## Issues
 All users are encouraged to report any issues they might run into or suggestions that would improve the experience of using this docker container. Simply send an email to [Minecraft Docker - Support](mailto:contact-project+rdall96-minecraft-docker-39680657-issue-@incoming.gitlab.com).

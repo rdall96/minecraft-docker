@@ -1,7 +1,10 @@
 # Minecraft Server - Docker
 
+![minecraft-docker-logo](https://gitlab.com/rdall96/minecraft-docker/-/blob/75538a3285d67a6dd8ecd113dda8ce6ab09d27d3/project_icon.png)
+
+This project is a build system that creates Minecraft Docker images.
+
 > [!NOTE]
-> This package is the build system that creates Minecraft Docker images, not the image itself.
 > Use this if you wish to create custom builds of Minecraft server images, otherwise, see [rdall96/minecraft-server](https://hub.docker.com/r/rdall96/minecraft-server) for pre-built images.
 
 This docker image based on Alpine Linux contains the necessary components to run a Minecraft server. The project supports the following Minecraft versions:
@@ -18,7 +21,9 @@ Pull the image to your local machine with:
 docker pull rdall96/minecraft-server:latest
 ```
 
-> The Docker tags indicate the Minecraft type and version. For example, to play vanilla Minecraft 1.20.1 (java), use the tag `1.20.1`. The `latest` tag will always track the newest vanilla Minecraft Java version. For other types of Minecraft (modded or bedrock) the respective game version will have the type appended to it. i.e.: `1.20.1-fabric_0.14.21`, `latest-bedrock`, `1.19.2-bedrock`. Modded Minecraft doesn't have a latest tag, since mods can take some time to update, it's not safe to keep updating the image.
+> [!NOTE]
+> The Docker tags indicate the Minecraft type and version. For example, to play vanilla Minecraft 1.20.1 (java), use the tag `1.20.1`. The `latest` tag will always track the newest vanilla Minecraft Java version. For other types of Minecraft (modded or bedrock) the respective game version will have the type appended to it. i.e.: `1.20.1-fabric_0.14.21`, `latest-bedrock`, `1.19.2-bedrock`.
+> Modded Minecraft doesn't have a latest tag, since mods can take some time to update, it's not safe to keep updating the image.
 
 Start a new container:
 ```
@@ -27,14 +32,17 @@ docker run -d --name minecraft -p 25565:25565 -e EULA=true rdall96/minecraft-ser
 
 The new server will be running at `localhost:25565` or `<your-ip-address-here>:25565`. For access outside your home network you need to open a port on your router. It is strongly encouraged to setup DDNS (Dynamic DNS) to link your public IP to a domain name, so you don't get disconnected or loose access if your IP changes.
 
-> A note regarding port forwarding: Opening ports on your network can be unsafe and expose you to malicious attacks, please proceed with caution and keep in mind there is a risk involved with it. This project's only goal is to run a Minecraft server, it and its owners are not responsible for any damage caused to you due to its usage with port forwarding.
+> [!WARNING]
+> A note regarding port forwarding.
+> Opening ports on your network can be unsafe and expose you to malicious attacks, please proceed with caution and keep in mind there is a risk involved with it.
+> This project's only goal is to run a Minecraft server, it and its owners are not responsible for any damage caused to you due to its usage with port forwarding.
 
 ## Customization
 
 ### World data
-You can map the container path to the world file to a local directory on your system in order to persist the data throughout server restarts and updates on a location of your choosing. Just simply add this to your *docker run* command: `-v <host-path>:/minecraft/world`.
+You can map the container path to the world file to a local directory on your system (or a Docker volume) in order to persist the data throughout server restarts and updates on a location of your choosing. To do so, just simply add this to your *docker run* command: `-v <host-path>:/minecraft/world`.
 
-Complete command example mapping the world data to a directory on your desktop:
+Complete example mapping the world data to a directory on your desktop:
 ```
 docker run -d --name minecraft \
     -v ~/Desktop/minecraft:/minecraft/world \
@@ -56,7 +64,7 @@ docker run -d --name minecraft \
     -e WHITE_LIST=true \
     rdall96/minecraft-server:latest
 ```
-The `/minecraft/configurations` directory will contain files for the JSON configurations (i.e.: whitelist.json), as well as the legacy text format (.txt). For more information consult the guide in the README that is generated in that directory upon creation.
+The `/minecraft/configurations` directory will contain files for the JSON configurations (i.e.: whitelist.json), as well as the legacy text format (.txt). For more information consult the guide in the README that is generated in that directory upon starting the server.
 
 ### Server properties
 There are a number of environment variables you can pass to your container in order to customize the **server.properties** file associated with a Minecraft server. Below is a complete list.
@@ -96,7 +104,8 @@ There are a number of environment variables you can pass to your container in or
 For more details and information regarding each of the properties above, please consult the [Minecraft wiki on server properties](https://minecraft.fandom.com/wiki/Server.properties#Java_Edition_3)
 
 Any of these environment variables can be passed to the docker start container command with the argument `-e <NAME>=<VALUE>`.
-However, when using a lot of these properties it is recommended to leverage environment files. These are files stored on your host which list all the of properties neatly in one place and can then be passed to docker using `--env-file <file-path>`.
+If you're using a lot of these properties, you want to consider passing Docker an environment file instead. This file is stored on your system and it lists all the of properties neatly in one place.
+You can an environment file to Docker using the flag `--env-file <file-path>`.
 
 For example, here's the contents of an environment file stored at path `~/minecraft_server/properties.env` on the host computer.
 ```
@@ -107,7 +116,7 @@ MAX_PLAYERS=5
 WHITELIST=true
 ```
 
-This file can then be used to star the Minecraft server as follows:
+This file can then be used to start the Minecraft server as follows:
 ```
 docker run -d --name minecraft \
     -v ~/Desktop/minecraft:/minecraft/world \
@@ -126,10 +135,4 @@ You can customize the JVM runtime using JVM args. Add your args to the `jvm_args
 All arguments in this file are forwarded to the java process used to run the Minecraft server. You can add `-XX:+PrintFlagsFinal` to log all of the JVM parameters at startup.
 
 ## Issues
-All users are encouraged to report any issues they might run into or suggestions that would improve the experience of using this docker container. Simply send an email to [Minecraft Docker - Support](mailto:contact-project+rdall96-minecraft-docker-39680657-issue-@incoming.gitlab.com)
-
-## Development
-
-This Minecraft Docker image can easily be used as a starting point for creating your own custom Minecraft container.
-Feel free to download and create modded versions by installing additional components to the image. The world file doesn't generate until the container is run for the fist time, so you are good to go.
-Just note that there is a startup script which will act as the entry-point when the container is run. This can be found in `/minecraft/start_server.sh` inside the container.
+All users are encouraged to report any issues they might run into or suggestions that would improve the experience of using this docker container. Simply send an email to [Minecraft Docker - Support](mailto:contact-project+rdall96-minecraft-docker-39680657-issue-@incoming.gitlab.com).

@@ -1,5 +1,10 @@
 # Minecraft Server - Docker
 
+[![Latest Release](https://gitlab.com/rdall96/minecraft-docker/-/badges/release.svg)](https://gitlab.com/rdall96/minecraft-docker/-/releases)
+[![License](https://img.shields.io/badge/LICENSE-APACHE-green)](https://gitlab.com/rdall96/minecraft-docker/-/blob/main/LICENSE)
+![Platform](https://img.shields.io/badge/platforms-docker-blue)
+[![CI Status](https://gitlab.com/rdall96/minecraft-docker/badges/main/pipeline.svg)](https://gitlab.com/rdall96/minecraft-docker/-/commits/main)
+
 ![minecraft-docker-logo](https://gitlab.com/rdall96/minecraft-docker/-/blob/75538a3285d67a6dd8ecd113dda8ce6ab09d27d3/project_icon.png)
 
 This project is a build system that creates Minecraft Docker images.

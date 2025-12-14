@@ -11,6 +11,8 @@ variables:
   # Docker-in-Docker setup
   DOCKER_HOST: "tcp://docker:2376"
   DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   # Builder CLI image to use when building Minecraft server images
   BUILDER_CLI_IMAGE: "$CI_REGISTRY/rdall96/minecraft-docker"
   BUILDER_CLI_TAG: "2.6.1"

@@ -1,10 +1,34 @@
 # Minecraft Docker Builder
 # GitLab CI/CD configuration
 
+spec:
+  inputs:
+    minecraft_type:
+      type: string
+      options:
+        - vanilla
+        - fabric
+        - forge
+        - neoForged
+        - quilt
+      default: vanilla
+      description: The type of Minecraft server.
+    minecraft_version:
+      type: string
+      regex: ^\S+$ # the version can't be empty
+      default: latest
+      description: |
+                    The game version to use (i.e.: 1.20.1).
+                    Use "latest" to build the most recent version of Minecraft.
+                    For modded Minecraft, you can specify the mod loader version like so <minecraft_version>:<mod_loader_version>
+
+---
+
 stages:
   - test
   - build
   - create_image
+
 
 variables:
   RELEASE_TAG: '/^\d.\d.\d$/'
@@ -116,7 +140,7 @@ minecraft-server:
   script:
     # Pull the CLI image
     - docker pull $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG
-    - echo "Building Docker image for $MINECRAFT_TYPE Minecraft version $MINECRAFT_VERSION"
+    - echo "Building Docker image for $[[inputs.minecraft_type]] Minecraft version $[[inputs.minecraft_version]]"
     # Print out the CLI version being used
     - |
       docker run --rm $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG version
@@ -125,11 +149,9 @@ minecraft-server:
       docker run --rm \
       -v /var/run/docker.sock:/var/run/docker.sock \
       $BUILDER_CLI_IMAGE:$BUILDER_CLI_TAG \
-      build -t $MINECRAFT_TYPE -v $MINECRAFT_VERSION \
+      build -t $[[inputs.minecraft_type]] -v $[[inputs.minecraft_version]] \
       --push -u $MINECRAFT_SERVER_REPOSITORY_USERNAME -p $MINECRAFT_SERVER_REPOSITORY_PASSWORD \
       --clean
   rules:
-    # Only run this when we have a valid Minecraft type and version and for pipeline triggers
-    - if: $MINECRAFT_VERSION == null || $MINECRAFT_VERSION == ""
-      when: never
+    # Only run this when the pipeline is either triggered from a schedule or manually
     - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"

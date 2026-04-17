@@ -61,10 +61,15 @@ enum Version: String {
      - Option to specify which Docker connection to use: local socket, or server.
      */
     case v2_6_1 = "2.6.1"
+
+    /**
+     - Update base alpine image from 3.22.2 to 3.23.4.
+     */
+    case v2_6_2 = "2.6.2"
 }
 
 extension Version {
-    static let current: Self = .v2_6_1
+    static let current: Self = .v2_6_2
 }
 
 extension Version: CustomStringConvertible {

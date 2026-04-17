@@ -19,7 +19,7 @@ protocol MinecraftBuilderProtocol {
 }
 
 final class MinecraftBuilder: MinecraftBuilderProtocol {
-    private static let baseImageTag = Docker.Image.Tag(name: "alpine", tag: "3.22.2")
+    private static let baseImageTag = Docker.Image.Tag(name: "alpine", tag: "3.23.4")
 
     let minecraftType: GameType
     let dockerClient: DockerClient

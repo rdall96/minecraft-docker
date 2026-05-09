@@ -66,10 +66,15 @@ enum Version: String {
      - Update base alpine image from 3.22.2 to 3.23.4.
      */
     case v2_6_2 = "2.6.2"
+
+    /**
+     - Add RCON server properties.
+     */
+    case v2_6_3 = "2.6.3"
 }
 
 extension Version {
-    static let current: Self = .v2_6_2
+    static let current: Self = .v2_6_3
 }
 
 extension Version: CustomStringConvertible {
